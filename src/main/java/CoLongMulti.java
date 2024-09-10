@@ -40,7 +40,7 @@ public class CoLongMulti {
         tesseract.setDatapath("C:/Program Files/Tesseract-OCR/tessdata");
         tesseract.setLanguage("vie");
 
-        int[] accounts = new int[]{3373, 3374};
+        int[] accounts = new int[]{3366, 3367};
         int n = accounts.length;
         Queue<Dest>[] queues = new LinkedList[n];
         HWND[] handles = new HWND[n];
@@ -56,18 +56,21 @@ public class CoLongMulti {
             visited[i] = new HashSet<>();
         }
 
-        int questCount = 10;
+        int questCount = 2;
         for (int k = 0; k < questCount; k++) {
             for (int i = 0; i < n; i++) {
                 User32.INSTANCE.SetForegroundWindow(handles[i]);
-                if (k == 0) setUpQuest(rects[i]);
+                Thread.sleep(200);
+//                if (k == 0) setUpQuest(rects[i]);
                 receiveQuest(rects[i]);
             }
             for (int i = n - 1; i >= 0; i--) {
                 User32.INSTANCE.SetForegroundWindow(handles[i]);
+                Thread.sleep(200);
                 parseDestination(rects[i], queues[i]);
                 locations[i] = getLocation(rects[i]);
             }
+            traveling(queues, locations, rects, visited, handles, n);
         }
     }
 
@@ -93,6 +96,7 @@ public class CoLongMulti {
         closeTutorial(rect);
         keyPress(KeyEvent.VK_TAB);
     }
+
     private static void receiveQuest(Rectangle rect) throws InterruptedException, IOException, TesseractException {
         keyPress(KeyEvent.VK_ALT, KeyEvent.VK_E);
         rightClick(445, 417, rect); // right click on flag
@@ -211,6 +215,7 @@ public class CoLongMulti {
         } else {
             keyPress(KeyEvent.VK_TAB);
             click(queue.peek().mapX, queue.peek().mapY, rect);
+            keyPress(KeyEvent.VK_TAB);
         }
     }
 
@@ -225,65 +230,94 @@ public class CoLongMulti {
                 }
                 if (isInBattle(rects[i])) {
                     User32.INSTANCE.SetForegroundWindow(handles[i]);
+                    Thread.sleep(200);
                     progressMatch(rects[i]);
                     last = i;
                     stillCount[i] = 0;
-                } else if (locations[i].contains(queues[i].peek().dest) ) {
+                } else if (locations[i].contains(queues[i].peek().dest)) {
                     int[] coords = getCoordinates(rects[i]);
                     int x = queues[i].peek().x;
                     int y = queues[i].peek().y;
                     if (coords[0] == x && coords[1] == y && !isInBattle(rects[i])) {
+                        User32.INSTANCE.SetForegroundWindow(handles[i]);
+                        Thread.sleep(200);
                         if (queues[i].peek().mapX == -1) {
                             Rectangle temp = new Rectangle(rects[i].x + 224, rects[i].y + 257, 150, 20);
                             BufferedImage image = robot.createScreenCapture(temp);
-                            if (removeDiacritics(tesseract.doOCR(image)).contains("[")) {
+                            String str = removeDiacritics(tesseract.doOCR(image));
+                            System.out.println(str);
+                            if (str.contains("[")) {
                                 finishQuest(rects[i]);
                                 queues[i].poll();
                                 count--;
                             }
                         } else {
                             queues[i].poll();
-                            stillCount[i] = 0;
+                            Dest dest = queues[i].peek();
+                            if (!dest.toTVD && dest.mapX == -1) {
+                                keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+                                click(438, 287, rects[i]);
+                            } else if (!dest.toTVD) {
+                                keyPress(KeyEvent.VK_TAB);
+                                click(dest.mapX, dest.mapY, rects[i]);
+                                keyPress(KeyEvent.VK_TAB);
+                            }
                         }
                     }
                 } else if (!getLocation(rects[i]).equals(locations[i])) {
                     locations[i] = getLocation(rects[i]);
-                    stillCount[i] = 0;
                     if (!visited[i].contains(locations[i])) {
+                        User32.INSTANCE.SetForegroundWindow(handles[i]);
+                        Thread.sleep(200);
                         closeTutorial(rects[i]);
                         visited[i].add(locations[i]);
                     }
-                } else if (stillCount[i] >= 100) {
-
+                    stillCount[i] = 0;
+                } else if (stillCount[i] >= 40) {
+                    int[] a = getCoordinates(rects[i]);
+                    Thread.sleep(300);
+                    int[] b = getCoordinates(rects[i]);
+                    if (a[0] == b[0] && a[1] == b[1] && !isInBattle(rects[i])) {
+                        User32.INSTANCE.SetForegroundWindow(handles[i]);
+                        if (queues[i].peek().mapX != -1) {
+                            keyPress(KeyEvent.VK_TAB);
+                            click(queues[i].peek().mapX, queues[i].peek().mapY, rects[i]);
+                            keyPress(KeyEvent.VK_TAB);
+                        } else {
+                            keyPress(KeyEvent.VK_ALT, KeyEvent.VK_J);
+                            click(90, 185, rects[i]);
+                            click(165, 497, rects[i]);
+                            keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+                            click(438, 287, rects[i]);
+                        }
+                    }
+                    stillCount[i] = 0;
                 }
                 stillCount[i]++;
-            }
-            for (int i = last; i >= 0; i--) {
-                User32.INSTANCE.SetForegroundWindow(handles[i]);
-            }
-            Thread.sleep(100);
-            if (count >= 100) {
-                int[] a = getCoordinates();
-                Thread.sleep(500);
-                int[] b = getCoordinates();
-                if (a[0] == b[0] && a[1] == b[1] && !isInBattle()) {
-                    if (mapCoords != null) {
-                        keyPress(KeyEvent.VK_TAB);
-                        click(mapCoords);
-                        keyPress(KeyEvent.VK_TAB);
-                    } else {
-                        keyPress(KeyEvent.VK_ALT, KeyEvent.VK_J);
-                        click(90, 185);
-                        click(165, 497);
+                if (!queues[i].isEmpty() && queues[i].peek().toTVD) {
+                    goToTVD(rects[i]);
+                    if (queues[i].peek().toHTT) {
+                        goToHTT(rects[i]);
+                    }
+                    queues[i].poll();
+                    Dest dest = queues[i].peek();
+                    if (dest.mapX == -1) {
                         keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
-                        click(438, 287);
-                        robot.mouseMove(194 + rect.x, 549 + rect.y);
+                        click(438, 287, rects[i]);
+                    } else {
+                        keyPress(KeyEvent.VK_TAB);
+                        click(dest.mapX, dest.mapY, rects[i]);
+                        keyPress(KeyEvent.VK_TAB);
                     }
                 }
-                count = 0;
             }
-
-
+            for (int i = last; i >= 0; i--) {
+                if (!queues[i].isEmpty()) {
+                    User32.INSTANCE.SetForegroundWindow(handles[i]);
+                }
+            }
+            Thread.sleep(100);
+            System.out.println(Arrays.toString(queues));
         }
     }
 
@@ -298,9 +332,7 @@ public class CoLongMulti {
             }
         }
         Thread.sleep(500);
-        while (!waitForCue(224, 257, 150, 20, "[", rect)) {
-            Thread.sleep(100);
-        }
+        waitForCue(224, 257, 150, 20, "[", rect);
         click(557, 266, rect); // click on final text box;
     }
 
@@ -325,7 +357,7 @@ public class CoLongMulti {
         Thread.sleep(500);
         // ta so tro thu: 79 175 176 / 111 175 176
         // gi cung so: 239 239 15 /
-        // tro thu so ta: 170 113 143 / 142 111 143 / 170 113 175 / 175 143 175
+        // tro thu so ta: 170 113 143 / 142 111 143 / 170 113 175 / 175 143 175 / 115 191 192
         // ta so tan thu: 143 175 111 / 143 206 100
         Color color = robot.getPixelColor(225 + rect.x, 196 + rect.y);
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
@@ -342,7 +374,7 @@ public class CoLongMulti {
             System.out.println("tan thu");
             newbieAttack(rect);
             defense();
-        } else if (b == 176) {
+        } else if (b == 176 || b == 192) {
             System.out.println("tro thu");
             defense();
             characterAttack(rect);
@@ -370,7 +402,9 @@ public class CoLongMulti {
     private static String getLocation(Rectangle rect) throws TesseractException {
         Rectangle temp = new Rectangle(rect.x + 656, rect.y + 32, 112, 15);
         BufferedImage image = robot.createScreenCapture(temp);
-        return removeDiacritics(tesseract.doOCR(image));
+        String str = removeDiacritics(tesseract.doOCR(image));
+        System.out.println(str);
+        return str;
     }
 
     private static int[] getCoordinates(Rectangle rect) throws IOException, TesseractException {
@@ -415,10 +449,13 @@ public class CoLongMulti {
         click(enemy, rect);
     }
 
-    private static void getOut(Rectangle rect) throws InterruptedException {
+    private static void getOut(Rectangle rect) throws InterruptedException, TesseractException {
         click(730, 443, rect);
         Thread.sleep(2000);
         click(651, 432, rect);
+        while (!getLocation(rect).contains("kinh thanh")) {
+            Thread.sleep(100);
+        }
     }
 
     private static void closeTutorial(Rectangle rect) throws TesseractException, InterruptedException {
@@ -432,9 +469,7 @@ public class CoLongMulti {
 
     private static void goToTVD(Rectangle rect) throws InterruptedException, TesseractException, IOException {
         click(126, 270, rect);
-        while (!waitForCue(224, 257, 100, 20, "binh khi", rect)) {
-            Thread.sleep(100);
-        }
+        waitForCue(224, 257, 100, 20, "binh khi", rect);
         click(323, 456, rect);
         while (!getLocation(rect).contains("danh nhan")) {
             Thread.sleep(100);
@@ -448,9 +483,7 @@ public class CoLongMulti {
 
     private static void goToHTT(Rectangle rect) throws InterruptedException, TesseractException, IOException {
         click(558, 255, rect);
-        while (!waitForCue(223, 278, 150, 20, "hoang thach", rect)) {
-            Thread.sleep(100);
-        }
+        waitForCue(223, 278, 150, 20, "hoang thach", rect);
         click(259, 286, rect);
         while (!getLocation(rect).contains("hoang thach")) {
             Thread.sleep(100);

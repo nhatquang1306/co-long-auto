@@ -7,6 +7,11 @@ public class Dest {
     public Dest(boolean toHTT) {
         this.toTVD = true;
         this.toHTT = toHTT;
+        this.mapX = -1;
+        this.mapY = -1;
+        this.x = -1;
+        this.y = -1;
+        this.dest = "";
     }
     public Dest(int x, int y, String dest) {
         this.toTVD = false;
@@ -24,5 +29,18 @@ public class Dest {
         this.y = y;
         this.dest = dest;
 
+    }
+
+    @Override
+    public String toString() {
+        return "Dest{" +
+                "toTVD=" + toTVD +
+                ", toHTT=" + toHTT +
+                ", mapX=" + mapX +
+                ", mapY=" + mapY +
+                ", x=" + x +
+                ", y=" + y +
+                ", dest='" + dest + '\'' +
+                '}';
     }
 }
