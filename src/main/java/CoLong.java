@@ -43,8 +43,9 @@ public class CoLong {
         usernameMap.put(3373, "XĐ13");
         usernameMap.put(3374, "XĐ14");
         usernameMap.put(411, "Nezumi");
+        usernameMap.put(3392, "XĐ20");
 
-        UID = 411;
+        UID = 3392;
 
         User32 user32 = User32.INSTANCE;
         HWND hwnd = user32.FindWindow(null, "http://colongonline.com " + usernameMap.get(UID) + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
@@ -78,21 +79,22 @@ public class CoLong {
 
 
 
-//        Thread.sleep(2000);
-//        Point location = MouseInfo.getPointerInfo().getLocation();
-//        System.out.println(location.x - rect.x);
-//        System.out.println(location.y - rect.y);
+        Thread.sleep(2000);
+        System.out.println(rect.x);
+        Point location = MouseInfo.getPointerInfo().getLocation();
+        System.out.println(location.x - rect.x);
+        System.out.println(location.y - rect.y);
 
 //        Rectangle temp = new Rectangle(rect.x + 223, rect.y + 314, 70, 20);
 //        BufferedImage image = robot.createScreenCapture(temp);
 //        ImageIO.write(image, "png", new File("screenshot.png"));
 //        System.out.println(removeDiacritics(tesseract.doOCR(image)));
 
-        setUpQuest();
-        int questCount = 10;
-        for (int i = 0; i < questCount; i++) {
-            startQuest();
-        }
+//        setUpQuest();
+//        int questCount = 10;
+//        for (int i = 0; i < questCount; i++) {
+//            startQuest();
+//        }
     }
 
     private static void setUpQuest() throws InterruptedException {
