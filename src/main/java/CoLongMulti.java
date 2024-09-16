@@ -18,6 +18,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.text.Normalizer;
 import java.util.*;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,14 +34,10 @@ public class CoLongMulti {
     private static Tesseract numberTesseract;
     private static int[] enemy;
     // note
-    // detect all windows
-    // do fix finish quest method
     // clear queue if any account gets an error
 
-    public static void main(String[] args) throws AWTException, InterruptedException, IOException, TesseractException, NativeHookException {
-        Map<Integer, String> usernameMap = getUsernameMap();
+    public static void main(String[] args) throws AWTException, InterruptedException, TesseractException, NativeHookException {
         initiateTerminationListener();
-
         User32 user32 = User32.INSTANCE;
 
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -59,19 +56,20 @@ public class CoLongMulti {
         numberTesseract.setLanguage("eng");
         numberTesseract.setTessVariable("tessedit_char_whitelist", "0123456789");
 
-        int[] accounts = new int[]{3375, 3373, 3374, 3372};
+        int[] accounts = new int[]{3392, 3391, 3390, 3432};
         int n = accounts.length;
+        Map<Integer, HWND> handleMap = getAllWindows(user32);
         Queue<Dest>[] queues = new LinkedList[n];
         HWND[] handles = new HWND[n];
         Rectangle[] rects = new Rectangle[n];
         Set<String>[] visited = new Set[n];
         String[] locations = new String[n];
-        int[] questCount = new int[]{5, 4, 6, 3};
+        int[] questCount = new int[]{6, 7, 7, 6};
 
         for (int i = 0; i < n; i++) {
             int UID = accounts[i];
             queues[i] = new LinkedList<>();
-            handles[i] = user32.FindWindow(null, "http://colongonline.com " + usernameMap.get(UID) + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
+            handles[i] = handleMap.get(UID);
             rects[i] = getRect(handles[i], user32, scale);
             visited[i] = new HashSet<>();
         }
@@ -97,7 +95,7 @@ public class CoLongMulti {
         GlobalScreen.unregisterNativeHook();
     }
 
-    private static void traveling(Queue<Dest>[] queues, String[] locations, Rectangle[] rects, Set<String>[] visited, HWND[] handles, int[] questCount, int n) throws IOException, InterruptedException, TesseractException {
+    private static void traveling(Queue<Dest>[] queues, String[] locations, Rectangle[] rects, Set<String>[] visited, HWND[] handles, int[] questCount, int n) throws InterruptedException, TesseractException {
         int[] stillCount = new int[n];
         int[] finalCount = new int[n];
         long[] startTime = new long[n];
@@ -109,6 +107,7 @@ public class CoLongMulti {
         }
         while (count > 0) {
             int last = -1;
+            boolean[] wasInBattle = new boolean[n];
             for (int i = 0; i < n; i++) {
                 if (queues[i].isEmpty()) {
                     continue;
@@ -139,14 +138,22 @@ public class CoLongMulti {
                         }
                         last = i;
                     }
+                    wasInBattle[i] = true;
                     stillCount[i] = 0;
                 } else if (isInBattle(rects[i])) {
                     setForeground(handles[i]);
                     progressMatch(rects[i]);
                     startTime[i] = System.currentTimeMillis();
                     last = i;
+                    wasInBattle[i] = true;
                     stillCount[i] = 0;
-                } else if (locations[i].contains(queues[i].peek().dest) || queues[i].peek().methodId == 4) {
+                }
+            }
+            for (int i = 0; i < n; i++) {
+                if (queues[i].isEmpty() || wasInBattle[i]) {
+                    continue;
+                }
+                if (locations[i].contains(queues[i].peek().dest) || queues[i].peek().methodId == 4) {
                     int[] coords = getCoordinates(rects[i]);
                     int x = queues[i].peek().x;
                     int y = queues[i].peek().y;
@@ -175,7 +182,7 @@ public class CoLongMulti {
                         last = i;
                     }
                     stillCount[i] = 0;
-                } else if (stillCount[i] >= 25) {
+                } else if (stillCount[i] >= 20) {
                     int[] a = getCoordinates(rects[i]);
                     Thread.sleep(300);
                     int[] b = getCoordinates(rects[i]);
@@ -197,7 +204,6 @@ public class CoLongMulti {
                     stillCount[i] = 0;
                 }
                 stillCount[i]++;
-
             }
 //            for (int i = last; i >= 0; i--) {
 //                if (!queues[i].isEmpty()) {
@@ -209,34 +215,35 @@ public class CoLongMulti {
     }
 
 
-    private static boolean arrived(Rectangle rect, Queue<Dest> queue, int[] finalCount, int[] questCount, int i, HWND handle) throws TesseractException, InterruptedException, IOException {
-        robot.mouseMove(194 + rect.x, 549 + rect.y);
-        Thread.sleep(200);
-        setForeground(handle);
+    private static boolean arrived(Rectangle rect, Queue<Dest> queue, int[] finalCount, int[] questCount, int i, HWND handle) throws TesseractException, InterruptedException {
         if (queue.peek().methodId == 0) {
             if (finalCount[i] >= 10) {
-                keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
-                click(438, 287, rect);
+                setForeground(handle);
+                fixFinishQuest(queue.peek().x, queue.peek().y, rect);
                 finalCount[i] = Integer.MIN_VALUE;
             } else {
+                robot.mouseMove(194 + rect.x, 549 + rect.y);
+                Thread.sleep(200);
+                setForeground(handle);
                 Rectangle temp = new Rectangle(rect.x + 224, rect.y + 257, 150, 20);
                 BufferedImage image = robot.createScreenCapture(temp);
-                System.out.println(tesseract.doOCR(image));
-                if (tesseract.doOCR(image).contains("[")) {
-                    finishQuest(rect);
-                    queue.poll();
-                    if (questCount[i] > 1) {
-                        queue.offer(new Dest(4));
-                        queue.offer(new Dest(5));
-                        queue.offer(new Dest(6));
-                        questCount[i]--;
-                    } else {
-                        return true;
-                    }
+                finalCount[i]++;
+                if (!tesseract.doOCR(image).contains("[")) {
+                    return false;
                 }
             }
-            finalCount[i]++;
+            finishQuest(rect);
+            queue.poll();
+            if (questCount[i] > 1) {
+                queue.offer(new Dest(4));
+                queue.offer(new Dest(5));
+                queue.offer(new Dest(6));
+                questCount[i]--;
+            } else {
+                return true;
+            }
         } else {
+            setForeground(handle);
             if (queue.peek().methodId != 4) {
                 queue.poll();
             }
@@ -245,9 +252,8 @@ public class CoLongMulti {
         return false;
     }
 
-    private static void startMovement(boolean questOpened, Rectangle rect, Queue<Dest> queue) throws InterruptedException, TesseractException, IOException {
+    private static void startMovement(boolean questOpened, Rectangle rect, Queue<Dest> queue) throws InterruptedException, TesseractException {
         Dest dest = queue.peek();
-        System.out.println(dest.methodId);
         switch (dest.methodId) {
             case -1:
                 keyPress(KeyEvent.VK_TAB);
@@ -286,14 +292,13 @@ public class CoLongMulti {
         }
     }
 
-    private static void finishQuest(Rectangle rect) throws TesseractException, InterruptedException, IOException {
+    private static void finishQuest(Rectangle rect) throws TesseractException, InterruptedException {
         int[] arr = new int[]{278, 296, 314, 332};
-        for (int y : arr) {
-            Rectangle temp = new Rectangle(rect.x + 223, rect.y + y, 70, 20);
+        for (int i = 3; i >= 0; i--) {
+            Rectangle temp = new Rectangle(rect.x + 223, rect.y + arr[i], 70, 20);
             BufferedImage image = robot.createScreenCapture(temp);
-            System.out.println(removeDiacritics(tesseract.doOCR(image)));
             if (removeDiacritics(tesseract.doOCR(image)).contains("van tieu")) {
-                click(251, y + 10, rect);
+                click(251, arr[i] + 10, rect);
                 break;
             }
         }
@@ -318,7 +323,7 @@ public class CoLongMulti {
         return false;
     }
 
-    private static void progressMatch(Rectangle rect) throws InterruptedException, TesseractException {
+    private static void progressMatch(Rectangle rect) throws InterruptedException {
         robot.mouseMove(194 + rect.x, 549 + rect.y);
         Thread.sleep(200);
         // gi cung so: 239 239 15
@@ -327,29 +332,23 @@ public class CoLongMulti {
         // tro thu so ta: 170 113 143 / 142 111 143 / 170 113 175 / 175 143 175
         Color color = robot.getPixelColor(225 + rect.x, 196 + rect.y);
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-        System.out.println(r + " " + g + " " + b);
         robot.mouseMove(194 + rect.x, 549 + rect.y);
         Thread.sleep(200);
         if (r == 239) {
-            System.out.println("gi cung so");
             characterAttack(rect);
             robot.mouseMove(194 + rect.x, 549 + rect.y);
             Thread.sleep(200);
             characterAttack(rect);
         } else if (r < g && g > b) {
-            System.out.println("tan thu");
             newbieAttack(rect);
             defense();
         } else if (r < g && g < b) {
-            System.out.println("tro thu");
             defense();
             characterAttack(rect);
         } else if (r > g && g < b) {
-            System.out.println("nhan vat");
             characterAttack(rect);
             defense();
         } else {
-            System.out.println("???");
             characterAttack(rect);
             robot.mouseMove(194 + rect.x, 549 + rect.y);
             Thread.sleep(200);
@@ -358,15 +357,13 @@ public class CoLongMulti {
 
     }
 
-
-    private static void parseDestination(Rectangle rect, Queue<Dest> queue) throws TesseractException, IOException, InterruptedException {
+    private static void parseDestination(Rectangle rect, Queue<Dest> queue) throws TesseractException, InterruptedException {
         robot.mouseMove(194 + rect.x, 549 + rect.y);
         Thread.sleep(200);
         keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
         Rectangle temp = new Rectangle(rect.x + 337, rect.y + 275, 310, 35);
         BufferedImage image = robot.createScreenCapture(temp);
         String destination = tesseract.doOCR(image);
-        System.out.println(destination);
         int index = 0;
         for (int i = 2; i < destination.length(); i++) {
             if (destination.charAt(i) == 'm') {
@@ -374,7 +371,6 @@ public class CoLongMulti {
                 break;
             }
         }
-        System.out.println(destination.substring(index));
         switch (destination.charAt(index)) {
             case 'C':
                 char c3 = destination.charAt(index + 1);
@@ -459,18 +455,55 @@ public class CoLongMulti {
         }
         startMovement(true, rect, queue);
     }
-    private static void fixFinishQuest(int sum) {
-        switch (sum) {
-            case 132: // ma quan lao thai ba 22 110
+    private static void fixFinishQuest(int x, int y, Rectangle rect) throws InterruptedException, TesseractException {
+        switch (x) {
+            case 10: // hac sinh y 10 73
+                click(399, 212, rect);
                 break;
-            case 26: // kim phung hoang 20 65
+            case 14: // duong thu thanh 14 71
+                click(505, 182, rect);
                 break;
-            case 113: // han thuan 29 84
+            case 18: // ma khong quan 18 60
+                click(287, 189, rect);
                 break;
-            case 83: // hac sinh y 10 73
+            case 20: // kim phung hoang 20 65
+                click(238, 237, rect);
                 break;
+            case 22: // ma quan lao thai ba 22 110
+                click(537, 401, rect);
+                break;
+            case 26: // so luu huong 26 57
+                click(145, 276, rect);
+                break;
+            case 29: // ngoc linh lung 29 70, han thuan 29 84
+                if (y == 70) {
+                    click(400, 131, rect);
+                } else {
+                    click(286, 146, rect);
+                }
+                break;
+            case 30: // ly than dong 30 199
+                click(683, 294, rect);
+                break;
+            case 32: // thiet dien phan qua 32 57
+                click(539, 177, rect);
+                break;
+            case 37: // chuong chan seu 37 145
+                click(549, 228, rect);
+                break;
+            case 38: // trinh trung 38 79
+                click(399, 125, rect);
+                break;
+            case 51: // tiet dai han 51 161
+                click(128, 284, rect);
+                break;
+            case 57: // cung to to 57 48
+                click(682, 260, rect);
+                break;
+            case 74: // tram lang 74 86
+                click(250, 201, rect);
         }
-
+        waitForCue(224, 257, 150, 20, "[", rect);
     }
 
     private static void closeTutorial(Rectangle rect) throws TesseractException, InterruptedException {
@@ -499,7 +532,7 @@ public class CoLongMulti {
         click(259, 286, rect); // click take me there
     }
 
-    private static void receiveQuest(Rectangle rect) throws InterruptedException, IOException, TesseractException {
+    private static void receiveQuest(Rectangle rect) throws InterruptedException, TesseractException {
         keyPress(KeyEvent.VK_ALT, KeyEvent.VK_E);
         click(306, 145, rect); // click on NPC
         waitForCue(223, 295, 120, 20, "van tieu", rect);
@@ -512,13 +545,13 @@ public class CoLongMulti {
 //        click(783, 228, rect); // close quest tracking
     }
 
-    private static void getOut(Rectangle rect) throws InterruptedException, TesseractException {
+    private static void getOut(Rectangle rect) throws InterruptedException {
         click(730, 443, rect);
         Thread.sleep(2000);
         click(651, 432, rect);
     }
 
-    private static void goToTVD(Rectangle rect) throws InterruptedException, TesseractException, IOException {
+    private static void goToTVD(Rectangle rect) throws InterruptedException, TesseractException {
         click(126, 270, rect);
         waitForCue(224, 257, 100, 20, "binh khi", rect);
         click(323, 456, rect);
@@ -528,7 +561,7 @@ public class CoLongMulti {
         click(787, 480, rect);
     }
 
-    private static void goToHTT(Rectangle rect) throws InterruptedException, TesseractException, IOException {
+    private static void goToHTT(Rectangle rect) throws InterruptedException, TesseractException {
         click(557, 287, rect);
         waitForCue(223, 278, 150, 20, "hoang thach", rect);
         click(259, 286, rect);
@@ -615,35 +648,6 @@ public class CoLongMulti {
         Thread.sleep(200);
     }
 
-    private static Map<Integer, String> getUsernameMap() {
-        Map<Integer, String> usernameMap = new HashMap<>();
-        usernameMap.put(1841, "HiênVũ");
-        usernameMap.put(3365, "LanChi");
-        usernameMap.put(3366, "TuệChi");
-        usernameMap.put(3367, "MaiChi");
-        usernameMap.put(3372, "XĐ12");
-        usernameMap.put(3373, "XĐ13");
-        usernameMap.put(3374, "XĐ14");
-        usernameMap.put(3375, "XĐ15");
-        usernameMap.put(3390, "XĐ18");
-        usernameMap.put(3391, "XĐ19");
-        usernameMap.put(3392, "XĐ20");
-        usernameMap.put(3432, "Trường");
-        usernameMap.put(3434, "Giáo");
-        usernameMap.put(3433, "Mẫu");
-        usernameMap.put(3304, "Takemi");
-        usernameMap.put(411, "Nezumi");
-        usernameMap.put(415, "Khang5");
-        usernameMap.put(3301, "Saemi");
-        usernameMap.put(3303, "Nozomi");
-        usernameMap.put(625, "Khanh3");
-        usernameMap.put(618, "Khanh4");
-        usernameMap.put(617, "Khanh5");
-        usernameMap.put(3304, "Takemi");
-        usernameMap.put(626, "Khanh2");
-        return usernameMap;
-    }
-
     private static void initiateTerminationListener() throws NativeHookException {
         Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
         logger.setLevel(Level.OFF);
@@ -665,6 +669,29 @@ public class CoLongMulti {
                 }
             }
         });
+    }
+    private static Map<Integer, HWND> getAllWindows(User32 user32) {
+        Map<Integer, HWND> res = new HashMap<>();
+        user32.EnumWindows((hwnd, arg) -> {
+            char[] text = new char[100];
+            user32.GetWindowText(hwnd, text, 100);
+            String title = new String(text).trim();
+            if (title.startsWith("http://colongonline.com")) {
+                int UID = 0;
+                int index = 23;
+                while (title.charAt(index) != ':') {
+                    index++;
+                }
+                index += 2;
+                while (Character.isDigit(title.charAt(index))) {
+                    UID = UID * 10 + Character.getNumericValue(title.charAt(index));
+                    index++;
+                }
+                res.put(UID, hwnd);
+            }
+            return true;
+        }, null);
+        return res;
     }
 
     private static void click(int x, int y, Rectangle rect) throws InterruptedException {
