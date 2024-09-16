@@ -44,8 +44,12 @@ public class CoLong {
         usernameMap.put(3374, "XĐ14");
         usernameMap.put(411, "Nezumi");
         usernameMap.put(3392, "XĐ20");
+        usernameMap.put(3432, "Trường");
+        usernameMap.put(3434, "Giáo");
+        usernameMap.put(3433, "Mẫu");
+        usernameMap.put(618, "Khanh4");
 
-        UID = 3392;
+        UID = 3433;
 
         User32 user32 = User32.INSTANCE;
         HWND hwnd = user32.FindWindow(null, "http://colongonline.com " + usernameMap.get(UID) + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
@@ -58,7 +62,6 @@ public class CoLong {
         tesseract = new Tesseract();
         tesseract.setDatapath("C:/Program Files/Tesseract-OCR/tessdata");
         tesseract.setLanguage("vie");
-
 
         RECT r = new RECT();
         user32.GetWindowRect(hwnd, r);
@@ -77,18 +80,14 @@ public class CoLong {
         firstIteration = true;
 
 
+        System.out.println(getLocation());
+        System.out.println(Arrays.toString(getCoordinates()));
+//        Thread.sleep(2000);
+//        Point location = MouseInfo.getPointerInfo().getLocation();
+//        System.out.println(location.x - rect.x);
+//        System.out.println(location.y - rect.y);
 
 
-        Thread.sleep(2000);
-        System.out.println(rect.x);
-        Point location = MouseInfo.getPointerInfo().getLocation();
-        System.out.println(location.x - rect.x);
-        System.out.println(location.y - rect.y);
-
-//        Rectangle temp = new Rectangle(rect.x + 223, rect.y + 314, 70, 20);
-//        BufferedImage image = robot.createScreenCapture(temp);
-//        ImageIO.write(image, "png", new File("screenshot.png"));
-//        System.out.println(removeDiacritics(tesseract.doOCR(image)));
 
 //        setUpQuest();
 //        int questCount = 10;
@@ -473,6 +472,7 @@ public class CoLong {
         Rectangle temp = new Rectangle(rect.x + 653, rect.y + 51, 125, 18);
         BufferedImage image = robot.createScreenCapture(temp);
         String str = tesseract.doOCR(image);
+        System.out.println(str);
         char[] coords = str.toCharArray();
         int[] res = new int[2];
         int i = 0;

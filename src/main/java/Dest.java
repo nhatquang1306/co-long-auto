@@ -1,20 +1,33 @@
 public class Dest {
-    public boolean toTVD, toHTT;
+    public int methodId;
     public int mapX, mapY;
     public int x, y;
     public String dest;
 
-    public Dest(boolean toHTT) {
-        this.toTVD = true;
-        this.toHTT = toHTT;
-        this.mapX = -1;
-        this.mapY = -1;
-        this.x = -1;
-        this.y = -1;
-        this.dest = "";
+    public Dest(int methodId) {
+        this.methodId = methodId;
+        if (methodId == 1) { // outside bltt
+            this.x = 8;
+            this.y = 511;
+            this.dest = "kinh thanh";
+        } else if (methodId == 2) { // at ti vo dao
+            this.mapX = 618;
+            this.mapY = 503;
+            this.x = 58;
+            this.y = 132;
+            this.dest = "tivo";
+        } else if (methodId == 3) { // in hoang thach tran
+            this.x = 34;
+            this.y = 188;
+            this.dest = "hoang thach";
+        } else if (methodId == 4 || methodId == 5) {
+            this.x = 18;
+            this.y = 72;
+            this.dest = "truong thanh";
+        }
     }
     public Dest(int x, int y, String dest) {
-        this.toTVD = false;
+        this.methodId = 0;
         this.mapX = -1;
         this.mapY = -1;
         this.x = x;
@@ -22,7 +35,7 @@ public class Dest {
         this.dest = dest;
     }
     public Dest(int mapX, int mapY, int x, int y, String dest) {
-        this.toTVD = false;
+        this.methodId = -1;
         this.mapX = mapX;
         this.mapY = mapY;
         this.x = x;
@@ -34,8 +47,7 @@ public class Dest {
     @Override
     public String toString() {
         return "Dest{" +
-                "toTVD=" + toTVD +
-                ", toHTT=" + toHTT +
+                "methodId=" + methodId +
                 ", mapX=" + mapX +
                 ", mapY=" + mapY +
                 ", x=" + x +
