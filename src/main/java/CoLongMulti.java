@@ -116,6 +116,7 @@ public class CoLongMulti {
             parseDestination(queues[i], handles[i]);
         }
         traveling(queues, locations, visited, handles, n);
+        System.out.println("finished");
 
         GlobalScreen.unregisterNativeHook();
     }
@@ -176,8 +177,8 @@ public class CoLongMulti {
             startTime[i] = -1;
         }
         int count = n;
-        while (count > 0) {
-            for (int i = 0; i < n; i++) {
+        while (count > 0 && !terminateFlag) {
+            for (int i = 0; i < n && !terminateFlag; i++) {
                 if (queues[i].isEmpty()) {
                     continue;
                 }
@@ -234,7 +235,7 @@ public class CoLongMulti {
                         }
                     }
                     stillCount[i] = System.currentTimeMillis();
-                } else if (System.currentTimeMillis() - stillCount[i] >= 12000) {
+                } else if (System.currentTimeMillis() - stillCount[i] >= 14000) {
                     int[] a = getCoordinates(handles[i]);
                     Thread.sleep(300);
                     int[] b = getCoordinates(handles[i]);
@@ -781,7 +782,7 @@ public class CoLongMulti {
         Thread.sleep(100);
         User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONDOWN, new WPARAM(WinUser.MK_LBUTTON), lParam);
         User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
-        Thread.sleep(500);
+        Thread.sleep(200);
     }
 
     public void rightClick(int a, int b, HWND handle) throws InterruptedException {
@@ -792,7 +793,7 @@ public class CoLongMulti {
         Thread.sleep(100);
         User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONDOWN, new WPARAM(WinUser.MK_RBUTTON), lParam);
         User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONUP, new WPARAM(0), lParam);
-        Thread.sleep(500);
+        Thread.sleep(200);
     }
 
     private void click(int[] arr, HWND handle) throws InterruptedException {
