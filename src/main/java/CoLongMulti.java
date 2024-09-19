@@ -244,9 +244,7 @@ public class CoLongMulti {
             finishQuest(handle, k);
             return true;
         } else {
-            if (queue.peek().methodId != 4) {
-                queue.poll();
-            }
+            queue.poll();
             startMovement(false, queue, handle, k);
             return false;
         }
@@ -688,6 +686,7 @@ public class CoLongMulti {
             @Override
             public void nativeKeyReleased(NativeKeyEvent e) {
                 if (e.getKeyCode() == NativeKeyEvent.VC_F9) {
+                    System.out.println("STOP");
                     terminateFlag = true; // Terminate the application
                 }
             }
