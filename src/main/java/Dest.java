@@ -6,11 +6,7 @@ public class Dest {
 
     public Dest(int methodId) {
         this.methodId = methodId;
-        if (methodId == 1) { // outside bltt
-            this.x = 8;
-            this.y = 511;
-            this.dest = "kinh thanh";
-        } else if (methodId == 2) { // at ti vo dao
+        if (methodId == 2) { // at ti vo dao
             this.mapX = 618;
             this.mapY = 503;
             this.x = 58;
@@ -20,10 +16,6 @@ public class Dest {
             this.x = 34;
             this.y = 188;
             this.dest = "hoang thach";
-        } else if (methodId == 4 || methodId == 5) {
-            this.x = 18;
-            this.y = 72;
-            this.dest = "truong thanh";
         }
     }
     public Dest(int x, int y, String dest) {
