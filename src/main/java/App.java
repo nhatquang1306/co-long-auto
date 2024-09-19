@@ -55,7 +55,7 @@ public class App {
             JButton button;
             if (i % 3 == 0) {
                 button = skillButtons.get(i / 3);
-            } else if (i % 2 == 1) {
+            } else if (i % 3 == 1) {
                 button = newbieButtons.get((i - 1) / 3);
             } else {
                 button = petButtons.get((i - 2) / 3);

@@ -1,6 +1,8 @@
 import com.sun.jna.platform.win32.User32;
+import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinDef.RECT;
+import com.sun.jna.platform.win32.WinUser;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 
@@ -19,6 +21,8 @@ import org.jnativehook.NativeHookException;
 import org.jnativehook.keyboard.NativeKeyEvent;
 import org.jnativehook.keyboard.NativeKeyListener;
 
+import static com.sun.jna.platform.win32.WinUser.*;
+
 
 public class CoLongMulti {
     private final Robot robot;
@@ -32,7 +36,8 @@ public class CoLongMulti {
     private final int[] pets;
     private boolean terminateFlag;
     // note
-    // clear queue if any account gets an error
+    // attack enemy next turn
+    // check for quest when first booting up
 
     public CoLongMulti(List<Integer> UIDs, List<Integer> questCounts, List<Integer> skillButtons, List<Integer> newbieButtons, List<Integer> petButtons) throws AWTException {
         int n = UIDs.size();
@@ -55,16 +60,16 @@ public class CoLongMulti {
         terminateFlag = false;
 
         tesseract = new Tesseract();
-        tesseract.setDatapath("app/tesseract/tessdata");
+        tesseract.setDatapath("input/tesseract/tessdata");
         tesseract.setLanguage("vie");
 
         numberTesseract = new Tesseract();
-        numberTesseract.setDatapath("app/tesseract/tessdata");
+        numberTesseract.setDatapath("input/tesseract/tessdata");
         numberTesseract.setLanguage("eng");
         numberTesseract.setTessVariable("tessedit_char_whitelist", "0123456789");
     }
 
-    public void run() throws InterruptedException, TesseractException, NativeHookException {
+    public void run() throws NativeHookException {
         initiateTerminationListener();
         User32 user32 = User32.INSTANCE;
 
@@ -79,35 +84,41 @@ public class CoLongMulti {
         Rectangle[] rects = new Rectangle[n];
         Set<String>[] visited = new Set[n];
         String[] locations = new String[n];
+        Thread keyPresserThread = new Thread(() -> {
+            try {
+                for (int i = 0; i < n; i++) {
+                    Integer UID = accounts[i];
+                    queues[i] = new LinkedList<>();
+                    if (!handleMap.containsKey(UID)) {
+                        throw new InterruptedException("Không có UID này.");
+                    }
+                    handles[i] = handleMap.get(UID);
+                    rects[i] = getRect(handles[i], user32, scale);
+                    visited[i] = new HashSet<>();
+                }
 
-        for (int i = 0; i < n; i++) {
-            Integer UID = accounts[i];
-            queues[i] = new LinkedList<>();
-            if (!handleMap.containsKey(UID)) {
-                throw new InterruptedException("Không có UID này.");
-            }
-            handles[i] = handleMap.get(UID);
-            rects[i] = getRect(handles[i], user32, scale);
-            visited[i] = new HashSet<>();
-        }
+                for (int i = 0; i < n && !terminateFlag; i++) {
+                    setForeground(handles[i]);
+                    setUpQuest(rects[i]);
+                    keyPress(KeyEvent.VK_F12);
+                    goToTTTC(rects[i]);
+                    while (!getLocation(rects[i]).contains("truong thanh") && !terminateFlag) {
+                        Thread.sleep(100);
+                    }
+                    receiveQuest(rects[i]);
+                    locations[i] = getLocation(rects[i]);
+                    visited[i].add(locations[i]);
+                }
+                for (int i = n - 1; i >= 0 && !terminateFlag; i--) {
+                    setForeground(handles[i]);
+                    parseDestination(rects[i], queues[i]);
+                }
+                traveling(queues, locations, rects, visited, handles, questCount, n);
+            } catch (Exception _) {
 
-        for (int i = 0; i < n && !terminateFlag; i++) {
-            setForeground(handles[i]);
-            setUpQuest(rects[i]);
-            keyPress(KeyEvent.VK_F12);
-            goToTTTC(rects[i]);
-            while (!getLocation(rects[i]).contains("truong thanh") && !terminateFlag) {
-                Thread.sleep(100);
             }
-            receiveQuest(rects[i]);
-            locations[i] = getLocation(rects[i]);
-            visited[i].add(locations[i]);
-        }
-        for (int i = n - 1; i >= 0 && !terminateFlag; i--) {
-            setForeground(handles[i]);
-            parseDestination(rects[i], queues[i]);
-        }
-        traveling(queues, locations, rects, visited, handles, questCount, n);
+        });
+//        keyPresserThread.start();
 
         GlobalScreen.unregisterNativeHook();
     }
