@@ -1,8 +1,11 @@
-import com.sun.jna.platform.win32.User32;
-import com.sun.jna.platform.win32.WinDef;
+import com.sun.jna.Library;
+import com.sun.jna.Memory;
+import com.sun.jna.Native;
+import com.sun.jna.Pointer;
+import com.sun.jna.platform.win32.*;
 import com.sun.jna.platform.win32.WinDef.HWND;
-import com.sun.jna.platform.win32.WinDef.RECT;
-import com.sun.jna.platform.win32.WinUser;
+import com.sun.jna.win32.StdCallLibrary;
+import com.sun.jna.win32.W32APIOptions;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 
@@ -10,6 +13,8 @@ import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.text.Normalizer;
 import java.util.*;
 import java.util.List;
@@ -20,12 +25,14 @@ import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 import org.jnativehook.keyboard.NativeKeyEvent;
 import org.jnativehook.keyboard.NativeKeyListener;
+import org.w3c.dom.css.Rect;
+
+import javax.imageio.ImageIO;
 
 import static com.sun.jna.platform.win32.WinUser.*;
 
 
 public class CoLongMulti {
-    private final Robot robot;
     private final Tesseract tesseract;
     private final Tesseract numberTesseract;
     private final int[] enemy;
@@ -35,6 +42,8 @@ public class CoLongMulti {
     private final int[] newbies;
     private final int[] pets;
     private boolean terminateFlag;
+    private double scale;
+
     // note
     // attack enemy next turn
     // check for quest when first booting up
@@ -55,7 +64,6 @@ public class CoLongMulti {
             pets[i] = petButtons.get(i);
         }
 
-        robot = new Robot();
         enemy = new int[]{222, 167};
         terminateFlag = false;
 
@@ -69,61 +77,96 @@ public class CoLongMulti {
         numberTesseract.setTessVariable("tessedit_char_whitelist", "0123456789");
     }
 
-    public void run() throws NativeHookException {
+    public void run() throws NativeHookException, InterruptedException, TesseractException, IOException {
         initiateTerminationListener();
         User32 user32 = User32.INSTANCE;
 
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         GraphicsConfiguration gc = device.getDefaultConfiguration();
-        double scale = gc.getDefaultTransform().getScaleX();
+        scale = gc.getDefaultTransform().getScaleX();
 
         int n = accounts.length;
         Map<Integer, HWND> handleMap = getAllWindows(user32);
         Queue<Dest>[] queues = new LinkedList[n];
-        HWND[] handles = new HWND[n];
-        Rectangle[] rects = new Rectangle[n];
         Set<String>[] visited = new Set[n];
+        HWND[] handles = new HWND[n];
         String[] locations = new String[n];
-        Thread keyPresserThread = new Thread(() -> {
-            try {
-                for (int i = 0; i < n; i++) {
-                    Integer UID = accounts[i];
-                    queues[i] = new LinkedList<>();
-                    if (!handleMap.containsKey(UID)) {
-                        throw new InterruptedException("Không có UID này.");
-                    }
-                    handles[i] = handleMap.get(UID);
-                    rects[i] = getRect(handles[i], user32, scale);
-                    visited[i] = new HashSet<>();
-                }
 
-                for (int i = 0; i < n && !terminateFlag; i++) {
-                    setForeground(handles[i]);
-                    setUpQuest(rects[i]);
-                    keyPress(KeyEvent.VK_F12);
-                    goToTTTC(rects[i]);
-                    while (!getLocation(rects[i]).contains("truong thanh") && !terminateFlag) {
-                        Thread.sleep(100);
-                    }
-                    receiveQuest(rects[i]);
-                    locations[i] = getLocation(rects[i]);
-                    visited[i].add(locations[i]);
-                }
-                for (int i = n - 1; i >= 0 && !terminateFlag; i--) {
-                    setForeground(handles[i]);
-                    parseDestination(rects[i], queues[i]);
-                }
-                traveling(queues, locations, rects, visited, handles, questCount, n);
-            } catch (Exception _) {
-
+        for (int i = 0; i < n; i++) {
+            Integer UID = accounts[i];
+            queues[i] = new LinkedList<>();
+            if (!handleMap.containsKey(UID)) {
+                throw new InterruptedException("Không có UID này.");
             }
-        });
-//        keyPresserThread.start();
+            handles[i] = handleMap.get(UID);
+            visited[i] = new HashSet<>();
+        }
+
+        for (int i = 0; i < n; i++) {
+            setUpQuest(handles[i]);
+            goToTTTC(handles[i]);
+            while (!getLocation(handles[i]).contains("truong thanh") && !terminateFlag) {
+                Thread.sleep(100);
+            }
+            receiveQuest(handles[i]);
+            locations[i] = getLocation(handles[i]);
+            visited[i].add(locations[i]);
+        }
+        for (int i = n - 1; i >= 0; i--) {
+            parseDestination(queues[i], handles[i]);
+        }
+        traveling(queues, locations, visited, handles, n);
 
         GlobalScreen.unregisterNativeHook();
     }
 
-    private void traveling(Queue<Dest>[] queues, String[] locations, Rectangle[] rects, Set<String>[] visited, HWND[] handles, int[] questCount, int n) throws InterruptedException, TesseractException {
+    public static BufferedImage captureWindow(HWND hwnd, int x, int y, int width, int height) {
+        x -= 3;
+        y -= 26;
+        HDC windowDC = User32.INSTANCE.GetDC(hwnd); // Get the window's device context (DC)
+        HDC memDC = GDI32.INSTANCE.CreateCompatibleDC(windowDC); // Create a compatible DC in memory
+        HBITMAP memBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(windowDC, width, height);
+        GDI32.INSTANCE.SelectObject(memDC, memBitmap); // Select the bitmap into the memory DC
+
+        // BitBlt to copy the window content to the memory DC
+        GDI32.INSTANCE.BitBlt(memDC, 0, 0, width, height, windowDC, x, y, GDI32.SRCCOPY);
+
+        // Get the bitmap info
+        WinGDI.BITMAPINFO bmi = new WinGDI.BITMAPINFO();
+        bmi.bmiHeader.biWidth = width;
+        bmi.bmiHeader.biHeight = -height; // Negative to indicate top-down drawing
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = WinGDI.BI_RGB;
+
+        // Allocate memory for pixel data
+        Memory buffer = new Memory(width * height * 4); // 4 bytes per pixel (32-bit)
+
+        // Retrieve the pixel data into the buffer
+        GDI32.INSTANCE.GetDIBits(memDC, memBitmap, 0, height, buffer, bmi, WinGDI.DIB_RGB_COLORS);
+
+        // Release resources
+        GDI32.INSTANCE.DeleteObject(memBitmap);
+        GDI32.INSTANCE.DeleteDC(memDC);
+        User32.INSTANCE.ReleaseDC(hwnd, windowDC);
+
+        // Convert the pixel data into a BufferedImage
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                int pixelOffset = (row * width + col) * 4;
+                int blue = buffer.getByte(pixelOffset) & 0xFF;
+                int green = buffer.getByte(pixelOffset + 1) & 0xFF;
+                int red = buffer.getByte(pixelOffset + 2) & 0xFF;
+                int rgb = (red << 16) | (green << 8) | blue;
+                image.setRGB(col, row, rgb);
+            }
+        }
+        return image;
+    }
+
+
+    private void traveling(Queue<Dest>[] queues, String[] locations, Set<String>[] visited, HWND[] handles, int n) throws InterruptedException, TesseractException {
         long[] stillCount = new long[n];
         long[] finalCount = new long[n];
         long[] startTime = new long[n];
@@ -132,29 +175,23 @@ public class CoLongMulti {
             finalCount[i] = Long.MAX_VALUE;
             startTime[i] = -1;
         }
-        Arrays.fill(startTime, -1);
         int count = n;
-        while (count > 0 && !terminateFlag) {
-            int last = -1;
-            for (int i = 0; i < n && !terminateFlag; i++) {
+        while (count > 0) {
+            for (int i = 0; i < n; i++) {
                 if (queues[i].isEmpty()) {
                     continue;
                 }
                 if (startTime[i] != -1) {
-                    if (!isInBattle(rects[i])) {
+                    if (!isInBattle(handles[i])) {
                         startTime[i] = -1;
                     } else if (startTime[i] != -2 && System.currentTimeMillis() - startTime[i] >= 4000) {
-                        setForeground(handles[i]);
-                        robot.mouseMove(194 + rects[i].x, 549 + rects[i].y);
-                        Thread.sleep(200);
-                        Color color = robot.getPixelColor(166 + rects[i].x, 231 + rects[i].y);
+                        Color color = getPixelColor(handles[i], 166, 231);
                         int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
                         if (r == 48 && b == 83 && (g == 79 || g == 111)) {
                             int timer = 0;
                             waitForNumber:
                             while (timer++ < 75 && !terminateFlag) {
-                                Rectangle temp = new Rectangle(rects[i].x + 337, rects[i].y + 54, 150, 70);
-                                BufferedImage image = robot.createScreenCapture(temp);
+                                BufferedImage image = captureWindow(handles[i], 337, 54, 150, 70);
                                 for (char c : numberTesseract.doOCR(image).toCharArray()) {
                                     if (c >= '0' && c <= '9') {
                                         break waitForNumber;
@@ -162,102 +199,87 @@ public class CoLongMulti {
                                 }
                                 Thread.sleep(100);
                             }
-                            defense();
-                            defense();
+                            defense(handles[i]);
+                            petDefense(handles[i]);
                             startTime[i] = -2;
                         }
-                        last = i;
                     }
                     stillCount[i] = System.currentTimeMillis();
-                } else if (isInBattle(rects[i])) {
-                    setForeground(handles[i]);
-                    progressMatch(rects[i], i);
+                } else if (isInBattle(handles[i])) {
+                    progressMatch(handles[i], i);
                     startTime[i] = System.currentTimeMillis();
-                    last = i;
                     stillCount[i] = System.currentTimeMillis();
                 } else if (locations[i].contains(queues[i].peek().dest) || queues[i].peek().methodId == 4) {
-                    int[] coords = getCoordinates(rects[i]);
+                    int[] coords = getCoordinates(handles[i]);
                     int x = queues[i].peek().x;
                     int y = queues[i].peek().y;
-                    if (((coords[0] == x && coords[1] == y) || queues[i].peek().methodId == 4) && !isInBattle(rects[i])) {
-                        if (arrived(rects[i], queues[i], finalCount, questCount, i, handles[i])) {
+                    if (((coords[0] == x && coords[1] == y) || queues[i].peek().methodId == 4) && !isInBattle(handles[i])) {
+                        if (arrived(queues[i], finalCount, i, handles[i])) {
                             count--;
                         }
-                        last = i;
                     }
                     stillCount[i] = System.currentTimeMillis();
-                } else if (!getLocation(rects[i]).equals(locations[i])) {
-                    locations[i] = getLocation(rects[i]);
+                } else if (!getLocation(handles[i]).equals(locations[i])) {
+                    locations[i] = getLocation(handles[i]);
                     if (!visited[i].contains(locations[i])) {
-                        setForeground(handles[i]);
-                        closeTutorial(rects[i]);
+                        closeTutorial(handles[i]);
                         visited[i].add(locations[i]);
-                        last = i;
                     }
-                    int[] coords = getCoordinates(rects[i]);
+                    int[] coords = getCoordinates(handles[i]);
                     int x = queues[i].peek().x;
                     int y = queues[i].peek().y;
-                    if (coords[0] == x && coords[1] == y && !isInBattle(rects[i])) {
-                        if (arrived(rects[i], queues[i], finalCount, questCount, i, handles[i])) {
+                    if (coords[0] == x && coords[1] == y && !isInBattle(handles[i])) {
+                        if (arrived(queues[i], finalCount, i, handles[i])) {
                             count--;
                         }
-                        last = i;
                     }
                     stillCount[i] = System.currentTimeMillis();
                 } else if (System.currentTimeMillis() - stillCount[i] >= 12000) {
-                    int[] a = getCoordinates(rects[i]);
+                    int[] a = getCoordinates(handles[i]);
                     Thread.sleep(300);
-                    int[] b = getCoordinates(rects[i]);
-                    if (a[0] == b[0] && a[1] == b[1] && !isInBattle(rects[i]) && !terminateFlag) {
-                        setForeground(handles[i]);
+                    int[] b = getCoordinates(handles[i]);
+                    if (a[0] == b[0] && a[1] == b[1] && !isInBattle(handles[i]) && !terminateFlag) {
                         if (queues[i].peek().methodId == 0) {
-                            keyPress(KeyEvent.VK_ALT, KeyEvent.VK_J);
-                            click(238, 194, rects[i]);
-                            click(238, 504, rects[i]);
-                            keyPress(KeyEvent.VK_ALT, KeyEvent.VK_J);
-                            keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
-                            click(438, 287, rects[i]);
+                            click(736, 200, handles[i]);
+                            click(238, 194, handles[i]);
+                            click(238, 504, handles[i]);
+                            click(736, 200, handles[i]);
+                            click(634, 585, handles[i]);
+                            click(438, 287, handles[i]);
                         } else if (queues[i].peek().methodId == -1) {
-                            keyPress(KeyEvent.VK_TAB);
-                            click(queues[i].peek().mapX, queues[i].peek().mapY, rects[i]);
-                            keyPress(KeyEvent.VK_TAB);
+                            click(766, 183, handles[i]);
+                            click(queues[i].peek().mapX, queues[i].peek().mapY, handles[i]);
+                            click(766, 183, handles[i]);
                         }
                     }
                     stillCount[i] = System.currentTimeMillis();
                 }
             }
-//            for (int i = last; i >= 0; i--) {
-//                if (!queues[i].isEmpty()) {
-//                    setForeground(handles[i]);
-//                }
-//            }
-            Thread.sleep(100);
+
         }
+        Thread.sleep(100);
     }
 
 
-    private boolean arrived(Rectangle rect, Queue<Dest> queue, long[] finalCount, int[] questCount, int i, HWND handle) throws TesseractException, InterruptedException {
+    private boolean arrived(Queue<Dest> queue, long[] finalCount, int i, HWND handle) throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return false;
         }
         if (queue.peek().methodId == 0) {
-            if (System.currentTimeMillis() - finalCount[i] >= 7000) {
-                setForeground(handle);
-                if (!fixFinishQuest(queue.peek().x, queue.peek().y, rect)) {
+            if (System.currentTimeMillis() - finalCount[i] >= 5000) {
+                if (!fixFinishQuest(queue.peek().x, queue.peek().y, handle)) {
                     return false;
                 }
-            } else {
-                robot.mouseMove(194 + rect.x, 549 + rect.y);
-                Thread.sleep(200);
-                setForeground(handle);
-                Rectangle temp = new Rectangle(rect.x + 224, rect.y + 257, 150, 20);
-                BufferedImage image = robot.createScreenCapture(temp);
+            } else if (finalCount[i] == Long.MAX_VALUE) {
+                BufferedImage image = captureWindow(handle, 224, 257, 150, 20);
                 if (!tesseract.doOCR(image).contains("[")) {
                     finalCount[i] = System.currentTimeMillis();
                     return false;
                 }
+            } else {
+                return false;
             }
-            finishQuest(rect);
+            finishQuest(handle);
             finalCount[i] = Long.MAX_VALUE;
             queue.poll();
             if (questCount[i] > 1) {
@@ -269,82 +291,78 @@ public class CoLongMulti {
                 return true;
             }
         } else {
-            setForeground(handle);
             if (queue.peek().methodId != 4) {
                 queue.poll();
             }
-            startMovement(false, rect, queue);
+            startMovement(false, queue, handle);
         }
         return false;
     }
 
-    private void startMovement(boolean questOpened, Rectangle rect, Queue<Dest> queue) throws InterruptedException, TesseractException {
+    private void startMovement(boolean questOpened, Queue<Dest> queue, HWND handle) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
         Dest dest = queue.peek();
         switch (dest.methodId) {
             case -1:
-                keyPress(KeyEvent.VK_TAB);
-                click(dest.mapX, dest.mapY, rect);
-                keyPress(KeyEvent.VK_TAB);
+                click(766, 183, handle);
+                click(dest.mapX, dest.mapY, handle);
+                click(766, 183, handle);
                 break;
             case 0:
                 if (!questOpened) {
-                    keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+                    click(634, 585, handle);
                 }
-                click(438, 287, rect);
+                click(438, 287, handle);
                 break;
             case 1:
-                getOut(rect);
+                getOut(handle);
                 break;
             case 2:
-                goToTVD(rect);
+                goToTVD(handle);
                 dest.methodId = -1;
                 break;
             case 3:
-                goToHTT(rect);
+                goToHTT(handle);
                 break;
             case 4:
-                goToTTTC(rect);
+                goToTTTC(handle);
                 dest.methodId = 5;
                 break;
             case 5:
-                receiveQuest(rect);
+                receiveQuest(handle);
                 break;
             case 6:
                 queue.poll();
-                parseDestination(rect, queue);
+                parseDestination(queue, handle);
                 break;
             default:
                 break;
         }
     }
 
-    private void finishQuest(Rectangle rect) throws TesseractException, InterruptedException {
+    private void finishQuest(HWND handle) throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return;
         }
-        int[] arr = new int[]{278, 296, 314, 332};
-        for (int i = 3; i >= 0; i--) {
-            Rectangle temp = new Rectangle(rect.x + 223, rect.y + arr[i], 70, 20);
-            BufferedImage image = robot.createScreenCapture(temp);
+        int[] arr = new int[] {296, 314, 332, 278};
+        for (int i = 0; i < 4; i++) {
+            BufferedImage image = captureWindow(handle, 223, arr[i], 70, 20);
             if (removeDiacritics(tesseract.doOCR(image)).contains("van tieu")) {
-                click(251, arr[i] + 10, rect);
+                click(251, arr[i] + 10, handle);
                 break;
             }
         }
         Thread.sleep(500);
-        waitForPrompt(224, 257, 150, 20, "[", rect);
-        click(557, 266, rect); // click on final text box;
+        waitForPrompt(224, 257, 150, 20, "[", handle);
+        click(557, 266, handle); // click on final text box;
     }
 
-    private boolean waitForPrompt(int x, int y, int width, int height, String target, Rectangle rect) throws TesseractException, InterruptedException {
-        robot.mouseMove(194 + rect.x, 549 + rect.y);
+    private boolean waitForPrompt(int x, int y, int width, int height, String target, HWND handle) throws TesseractException, InterruptedException {
         int timer = 0;
         while (timer++ < 30 && !terminateFlag) {
-            Rectangle temp = new Rectangle(rect.x + x, rect.y + y, width, height);
-            BufferedImage image = robot.createScreenCapture(temp);
+            BufferedImage image = captureWindow(handle, x, y, width, height);
             String str = removeDiacritics(tesseract.doOCR(image));
             if (str.contains(target)) {
                 Thread.sleep(200);
@@ -356,52 +374,41 @@ public class CoLongMulti {
     }
 
 
-    private void progressMatch(Rectangle rect, int index) throws InterruptedException {
+    private void progressMatch(HWND handle, int index) throws InterruptedException {
         if (terminateFlag) {
             return;
         }
-        robot.mouseMove(194 + rect.x, 549 + rect.y);
-        Thread.sleep(200);
         // gi cung so: 239 239 15
         // ta so tan thu: 143 175 111 / 143 206 100
         // ta so tro thu: 79 175 176 / 111 175 176 / 115 191 192 / 83 177 178
         // tro thu so ta: 170 113 143 / 142 111 143 / 170 113 175 / 175 143 175
-        Color color = robot.getPixelColor(225 + rect.x, 196 + rect.y);
+        Color color = getPixelColor(handle, 225, 196);
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-        robot.mouseMove(194 + rect.x, 549 + rect.y);
-        Thread.sleep(200);
         if (r == 239) {
-            characterAttack(rect, index);
-            robot.mouseMove(194 + rect.x, 549 + rect.y);
-            Thread.sleep(200);
-            petAttack(rect, index);
+            characterAttack(handle, index);
+            petAttack(handle, index);
         } else if (r < g && g > b) {
-            newbieAttack(rect, index);
-            defense();
+            newbieAttack(handle, index);
+            petDefense(handle);
         } else if (r < g && g < b) {
-            defense();
-            petAttack(rect, index);
+            defense(handle);
+            petAttack(handle, index);
         } else if (r > g && g < b) {
-            characterAttack(rect, index);
-            defense();
+            characterAttack(handle, index);
+            petDefense(handle);
         } else {
-            characterAttack(rect, index);
-            robot.mouseMove(194 + rect.x, 549 + rect.y);
-            Thread.sleep(200);
-            petAttack(rect, index);
+            characterAttack(handle, index);
+            petAttack(handle, index);
         }
 
     }
 
-    private void parseDestination(Rectangle rect, Queue<Dest> queue) throws TesseractException, InterruptedException {
+    private void parseDestination(Queue<Dest> queue, HWND handle) throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return;
         }
-        robot.mouseMove(194 + rect.x, 549 + rect.y);
-        Thread.sleep(200);
-        keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
-        Rectangle temp = new Rectangle(rect.x + 337, rect.y + 275, 310, 35);
-        BufferedImage image = robot.createScreenCapture(temp);
+        click(634, 585, handle);
+        BufferedImage image = captureWindow(handle, 337, 275, 310, 35);
         String destination = tesseract.doOCR(image);
         int index = 0;
         for (int i = 2; i < destination.length(); i++) {
@@ -414,7 +421,7 @@ public class CoLongMulti {
             case 'C':
                 char c3 = destination.charAt(index + 1);
                 if (c3 == 'u') { // cung to to
-                    keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+                    click(634, 585, handle);
                     queue.offer(new Dest(1));
                     queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
                     queue.offer(new Dest(2));
@@ -425,7 +432,7 @@ public class CoLongMulti {
                 }
                 break;
             case 'L': // ly than dong
-                keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+                click(634, 585, handle);
                 queue.offer(new Dest(1));
                 queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
                 queue.offer(new Dest(2));
@@ -435,7 +442,7 @@ public class CoLongMulti {
                 break;
             case 'T':
                 char c2 = destination.charAt(index + 3);
-                keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+                click(634, 585, handle);
                 if (c2 == 'm') { // tram lang
                     queue.offer(new Dest(1));
                     queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
@@ -456,19 +463,19 @@ public class CoLongMulti {
                 }
                 break;
             case 'M': // ma khong quan
-                keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+                click(634, 585, handle);
                 queue.offer(new Dest(1));
                 queue.offer(new Dest(102, 497, 161, 49, "dieu phong"));
                 queue.offer(new Dest(18, 60, "quan dong"));
                 break;
             case 'Đ': // duong thu thanh duong mon
-                keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+                click(634, 585, handle);
                 queue.offer(new Dest(1));
                 queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
                 queue.offer(new Dest(14, 71, "thoi luyen"));
                 break;
             case 'N': // ngoc linh lung quy vuc
-                keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+                click(634, 585, handle);
                 queue.offer(new Dest(1));
                 queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
                 queue.offer(new Dest(29, 70, "quy"));
@@ -492,154 +499,151 @@ public class CoLongMulti {
                 queue.offer(new Dest(22, 110, "ky dao"));
                 break;
         }
-        startMovement(true, rect, queue);
+        startMovement(true, queue, handle);
     }
 
-    private boolean fixFinishQuest(int x, int y, Rectangle rect) throws InterruptedException, TesseractException {
+    private boolean fixFinishQuest(int x, int y, HWND handle) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return false;
         }
         switch (x) {
             case 10: // hac sinh y 10 73
-                click(399, 212, rect);
+                click(399, 212, handle);
                 break;
             case 14: // duong thu thanh 14 71
-                click(505, 182, rect);
+                click(505, 182, handle);
                 break;
             case 18: // ma khong quan 18 60
-                click(287, 189, rect);
+                click(287, 189, handle);
                 break;
             case 20: // kim phung hoang 20 65
-                click(239, 230, rect);
+                click(239, 230, handle);
                 break;
             case 22: // ma quan lao thai ba 22 110
-                click(537, 401, rect);
+                click(537, 401, handle);
                 break;
             case 26: // so luu huong 26 57
-                click(145, 276, rect);
+                click(145, 276, handle);
                 break;
             case 29: // ngoc linh lung 29 70, han thuan 29 84
                 if (y == 70) {
-                    click(400, 131, rect);
+                    click(400, 131, handle);
                 } else {
-                    click(286, 146, rect);
+                    click(286, 146, handle);
                 }
                 break;
             case 30: // ly than dong 30 199
-                click(683, 308, rect);
+                click(683, 308, handle);
                 break;
             case 32: // thiet dien phan qua 32 57
-                click(539, 177, rect);
+                click(539, 177, handle);
                 break;
             case 37: // chuong chan seu 37 145
-                click(549, 228, rect);
+                click(549, 228, handle);
                 break;
             case 38: // trinh trung 38 79
-                click(399, 125, rect);
+                click(399, 125, handle);
                 break;
             case 51: // tiet dai han 51 161
-                click(128, 284, rect);
+                click(128, 284, handle);
                 break;
             case 57: // cung to to 57 48
-                click(682, 260, rect);
+                click(682, 260, handle);
                 break;
             case 74: // tram lang 74 86
-                click(250, 201, rect);
+                click(250, 201, handle);
         }
-        return waitForPrompt(224, 257, 150, 20, "[", rect);
+        return waitForPrompt(224, 257, 150, 20, "[", handle);
     }
 
-    private void closeTutorial(Rectangle rect) throws TesseractException, InterruptedException {
+    private void closeTutorial(HWND handle) throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return;
         }
-        Rectangle temp = new Rectangle(rect.x + 224, rect.y + 257, 150, 20);
-        BufferedImage image = robot.createScreenCapture(temp);
+        BufferedImage image = captureWindow(handle, 224, 257, 150, 20);
         String str = removeDiacritics(tesseract.doOCR(image));
         if (str.contains("tieu mai") || str.contains("thanh nhi")) {
-            click(557, 266, rect);
+            click(557, 266, handle);
         }
     }
 
-    private void setUpQuest(Rectangle rect) throws InterruptedException, TesseractException {
+    private void setUpQuest(HWND handle) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
-        closeTutorial(rect);
-        click(272, 142, rect); // click on unreceived quest
-        click(199, 145, rect); // click on current quest
-        keyPress(KeyEvent.VK_ALT, KeyEvent.VK_Q);
+        click(634, 585, handle);
+        closeTutorial(handle);
+        click(272, 142, handle); // click on unreceived quest
+        click(199, 145, handle); // click on current quest
+        click(634, 585, handle);
     }
 
-    private void goToTTTC(Rectangle rect) throws InterruptedException, TesseractException {
+    private void goToTTTC(HWND handle) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        keyPress(KeyEvent.VK_ALT, KeyEvent.VK_E);
-        rightClick(445, 417, rect); // right click on flag
-        waitForPrompt(224, 278, 180, 20, "toa do 1", rect);
-        click(348, 287, rect); // click on toa do
-        waitForPrompt(224, 278, 120, 20, "dua ta toi do", rect);
-        click(259, 286, rect); // click take me there
+        click(569, 586, handle);
+        rightClick(445, 417, handle); // right click on flag
+        waitForPrompt(224, 278, 180, 20, "toa do 1", handle);
+        click(348, 287, handle); // click on toa do
+        waitForPrompt(224, 278, 120, 20, "dua ta toi do", handle);
+        click(259, 286, handle); // click take me there
     }
 
-    private void receiveQuest(Rectangle rect) throws InterruptedException, TesseractException {
+    private void receiveQuest(HWND handle) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        keyPress(KeyEvent.VK_ALT, KeyEvent.VK_E);
-        click(306, 145, rect); // click on NPC
-        waitForPrompt(223, 295, 120, 20, "van tieu", rect);
-        click(272, 305, rect); // click on van tieu ca nhan
-        waitForPrompt(223, 335, 180, 20, "cap 2", rect);
-        click(285, 344, rect); // click on cap 2
+        click(569, 586, handle);
+        click(306, 145, handle); // click on NPC
+        waitForPrompt(223, 295, 120, 20, "van tieu", handle);
+        click(272, 305, handle); // click on van tieu ca nhan
+        waitForPrompt(223, 335, 180, 20, "cap 2", handle);
+        click(285, 344, handle); // click on cap 2
         Thread.sleep(500);
-        waitForPrompt(224, 257, 150, 20, "bach ly", rect);
-        click(285, 344, rect); // click close window
-//        click(783, 228, rect); // close quest tracking
+        waitForPrompt(224, 257, 150, 20, "bach ly", handle);
+        click(285, 344, handle); // click close window
     }
 
-    private void getOut(Rectangle rect) throws InterruptedException {
+    private void getOut(HWND handle) throws InterruptedException {
         if (terminateFlag) {
             return;
         }
-        click(730, 443, rect);
+        click(730, 443, handle);
         Thread.sleep(2000);
-        click(651, 432, rect);
+        click(651, 432, handle);
     }
 
-    private void goToTVD(Rectangle rect) throws InterruptedException, TesseractException {
+    private void goToTVD(HWND handle) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        click(126, 270, rect);
-        waitForPrompt(224, 257, 100, 20, "binh khi", rect);
-        click(323, 456, rect);
-        while (!getLocation(rect).contains("danh nhan") && !terminateFlag) {
+        click(126, 270, handle);
+        waitForPrompt(224, 257, 100, 20, "binh khi", handle);
+        click(323, 456, handle);
+        while (!getLocation(handle).contains("danh nhan") && !terminateFlag) {
             Thread.sleep(100);
         }
-        click(787, 480, rect);
+        click(787, 480, handle);
     }
 
-    private void goToHTT(Rectangle rect) throws InterruptedException, TesseractException {
+    private void goToHTT(HWND handle) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        click(557, 287, rect);
-        waitForPrompt(223, 278, 150, 20, "hoang thach", rect);
-        click(259, 286, rect);
+        click(557, 287, handle);
+        waitForPrompt(223, 278, 150, 20, "hoang thach", handle);
+        click(259, 286, handle);
     }
 
-    private String getLocation(Rectangle rect) throws TesseractException {
-        Rectangle temp = new Rectangle(rect.x + 656, rect.y + 32, 112, 15);
-        BufferedImage image = robot.createScreenCapture(temp);
+    private String getLocation(HWND handle) throws TesseractException {
+        BufferedImage image = captureWindow(handle, 656, 32, 112, 15);
         return removeDiacritics(tesseract.doOCR(image));
     }
 
-    private int[] getCoordinates(Rectangle rect) throws TesseractException {
-        Rectangle temp = new Rectangle(rect.x + 653, rect.y + 51, 125, 18);
-        BufferedImage image = robot.createScreenCapture(temp);
+
+    private int[] getCoordinates(HWND handle) throws TesseractException {
+        BufferedImage image = captureWindow(handle, 653, 51, 125, 18);
         char[] coords = removeDiacritics(tesseract.doOCR(image)).toCharArray();
         int[] res = new int[2];
         int i = 0;
@@ -656,36 +660,39 @@ public class CoLongMulti {
         return res;
     }
 
-    private boolean isInBattle(Rectangle rect) {
-        Color color = robot.getPixelColor(778 + rect.x, 38 + rect.y);
+    private boolean isInBattle(HWND handle) {
+        Color color = getPixelColor(handle, 778, 38);
         // 0 36 90 - in battle, 90 46 2 - in map
         return color.getRed() < color.getGreen() && color.getGreen() < color.getBlue();
     }
 
-    private void defense() throws InterruptedException {
-        keyPress(KeyEvent.VK_ALT, KeyEvent.VK_D);
+    private void defense(HWND handle) throws InterruptedException {
+        click(760, 292, handle);
+    }
+    private void petDefense(HWND handle) throws InterruptedException {
+        click(760, 246, handle);
     }
 
-    private void petAttack(Rectangle rect, int index) throws InterruptedException {
+    private void petAttack(HWND handle, int index) throws InterruptedException {
         if (pets[index] != 0) {
-            keyPress(pets[index]);
+            click(400 + pets[index] * 35, 548, handle);
         }
         Thread.sleep(200);
-        click(enemy, rect);
+        click(enemy, handle);
     }
 
-    private void characterAttack(Rectangle rect, int index) throws InterruptedException {
+    private void characterAttack(HWND handle, int index) throws InterruptedException {
         if (skills[index] != 0) {
-            keyPress(skills[index]);
+            click(375 + skills[index] * 35, 548, handle);
         }
         Thread.sleep(200);
-        click(enemy, rect);
+        click(enemy, handle);
     }
 
-    private void newbieAttack(Rectangle rect, int index) throws InterruptedException {
-        keyPress(newbies[index]);
+    private void newbieAttack(HWND handle, int index) throws InterruptedException {
+        click(375 + newbies[index] * 35, 548, handle);
         Thread.sleep(200);
-        click(enemy, rect);
+        click(enemy, handle);
     }
 
     public String removeDiacritics(String text) {
@@ -702,24 +709,6 @@ public class CoLongMulti {
             }
         }
         return res.toString();
-    }
-
-    private Rectangle getRect(HWND handle, User32 user32, double scale) {
-        RECT r = new RECT();
-        user32.GetWindowRect(handle, r);
-        Rectangle res = r.toRectangle();
-
-        res.x = (int) Math.round(res.x / scale);
-        res.y = (int) Math.round(res.y / scale);
-        res.width = (int) Math.round(res.width / scale);
-        res.height = (int) Math.round(res.height / scale);
-        return res;
-    }
-
-    private void setForeground(HWND handle) throws InterruptedException {
-        Thread.sleep(200);
-        User32.INSTANCE.SetForegroundWindow(handle);
-        Thread.sleep(200);
     }
 
     private void initiateTerminationListener() throws NativeHookException {
@@ -743,6 +732,20 @@ public class CoLongMulti {
                 }
             }
         });
+    }
+
+    public static Color getPixelColor(HWND hwnd, int x, int y) {
+        x -= 3;
+        y -= 26;
+        // Get the device context of the window
+        HDC hdc = User32.INSTANCE.GetDC(hwnd);
+
+        // Get the color of the specified pixel
+        int pixelColor = MyGDI32.INSTANCE.GetPixel(hdc, x, y);
+        User32.INSTANCE.ReleaseDC(hwnd, hdc); // Release the DC
+
+        // Return the color as a Color object
+        return new Color(pixelColor & 0xFF, (pixelColor >> 8) & 0xFF, (pixelColor >> 16) & 0xFF);
     }
 
     private Map<Integer, HWND> getAllWindows(User32 user32) {
@@ -769,42 +772,60 @@ public class CoLongMulti {
         return res;
     }
 
-    private void click(int x, int y, Rectangle rect) throws InterruptedException {
-        x += rect.x;
-        y += rect.y;
-        robot.mouseMove(x, y);
-        Thread.sleep(200);
-        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+
+    public void click(int a, int b, HWND handle) throws InterruptedException {
+        long x = Math.round((a - 3) * scale);
+        long y = Math.round((b - 26) * scale);
+        LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
+        User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
+        Thread.sleep(100);
+        User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONDOWN, new WPARAM(WinUser.MK_LBUTTON), lParam);
+        User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
         Thread.sleep(500);
     }
 
-    private void rightClick(int x, int y, Rectangle rect) throws InterruptedException {
-        x += rect.x;
-        y += rect.y;
-        robot.mouseMove(x, y);
-        Thread.sleep(200);
-        robot.mousePress(InputEvent.BUTTON3_DOWN_MASK);
-        robot.mouseRelease(InputEvent.BUTTON3_DOWN_MASK);
+    public void rightClick(int a, int b, HWND handle) throws InterruptedException {
+        long x = Math.round((a - 3) * scale);
+        long y = Math.round((b - 26) * scale);
+        LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
+        User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
+        Thread.sleep(100);
+        User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONDOWN, new WPARAM(WinUser.MK_RBUTTON), lParam);
+        User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONUP, new WPARAM(0), lParam);
         Thread.sleep(500);
     }
 
-    private void click(int[] arr, Rectangle rect) throws InterruptedException {
-        click(arr[0], arr[1], rect);
+    private void click(int[] arr, HWND handle) throws InterruptedException {
+        click(arr[0], arr[1], handle);
     }
 
-    private void rightClick(int[] arr, Rectangle rect) throws InterruptedException {
-        rightClick(arr[0], arr[1], rect);
+    private void rightClick(int[] arr, HWND handle) throws InterruptedException {
+        rightClick(arr[0], arr[1], handle);
+    }
+    private int[] getMouseLocation(HWND handle) throws InterruptedException {
+        Thread.sleep(2000);
+        RECT r = new RECT();
+        User32.INSTANCE.GetWindowRect(handle, r);
+        Rectangle rect = r.toRectangle();
+        rect.x = (int)Math.round(rect.x / scale);
+        rect.y = (int)Math.round(rect.y / scale);
+        Point m = MouseInfo.getPointerInfo().getLocation();
+        return new int[] {m.x - rect.x, m.y - rect.y};
     }
 
-    private void keyPress(int... keyCode) throws InterruptedException {
-        for (int k : keyCode) {
-            robot.keyPress(k);
-        }
-        Thread.sleep(200);
-        for (int k : keyCode) {
-            robot.keyRelease(k);
-        }
-        Thread.sleep(500);
+    public interface MyGDI32 extends StdCallLibrary {
+        MyGDI32 INSTANCE = Native.load("gdi32", MyGDI32.class);
+
+        int GetPixel(HDC hdc, int nXPos, int nYPos);
+    }
+
+    public interface WinUser {
+        int WM_LBUTTONDOWN = 0x0201; // Left mouse button down
+        int WM_LBUTTONUP = 0x0202; // Left mouse button up
+        int MK_LBUTTON = 0x0001; // Left button state
+        int WM_RBUTTONDOWN = 0x0204; // Right mouse button down
+        int WM_RBUTTONUP = 0x0205;
+        int MK_RBUTTON = 0x0002;
+        int WM_MOUSEMOVE = 0x0200;
     }
 }
