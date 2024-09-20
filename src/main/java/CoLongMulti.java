@@ -80,11 +80,11 @@ public class CoLongMulti {
 
         for (int i = 0; i < n; i++) {
             tesseracts[i] = new Tesseract();
-            tesseracts[i].setDatapath("input/tesseract/tessdata");
+            tesseracts[i].setDatapath("app/tesseract/tessdata");
             tesseracts[i].setLanguage("vie");
 
             numberTesseracts[i] = new Tesseract();
-            numberTesseracts[i].setDatapath("input/tesseract/tessdata");
+            numberTesseracts[i].setDatapath("app/tesseract/tessdata");
             numberTesseracts[i].setLanguage("eng");
             numberTesseracts[i].setTessVariable("tessedit_char_whitelist", "0123456789");
 
@@ -329,15 +329,13 @@ public class CoLongMulti {
                 petAttack(handle, k);
             } else if (r == 143) {
                 newbieAttack(handle, k);
-                Thread.sleep(200);
-                petDefense(handle, k);
+                petAttack(handle, k);
             } else if (b == 176) {
                 defense(handle, k);
                 petAttack(handle, k);
             } else if (b == 143 || b == 175) {
                 characterAttack(handle, k);
-                Thread.sleep(200);
-                petDefense(handle, k);
+                petAttack(handle, k);
             } else {
                 continue;
             }

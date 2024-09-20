@@ -1,18 +1,25 @@
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.util.*;
 import java.util.List;
 
 public class App {
+    private static Set<Integer> functionKeys;
     public static void main(String[] args) {
         JFrame frame = new JFrame("Auto Vận Tiêu");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(450, 300);
-        frame.setLayout(new GridLayout(7, 5, 5, 5));
+        frame.setSize(450, 205);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridLayout(5, 5, 5, 5));
+        panel.setBorder(new EmptyBorder(5, 5, 5, 5));
+        frame.add(panel);
 
         List<Integer> UIDs = new ArrayList<>();
         List<Integer> questCounts = new ArrayList<>();
@@ -26,60 +33,33 @@ public class App {
         List<JButton> newbieButtons = new ArrayList<>();
         List<JButton> petButtons = new ArrayList<>();
 
-
-        Set<Integer> functionKeys = Set.of(KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4,
+        functionKeys = Set.of(KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4,
                 KeyEvent.VK_F5, KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8);
 
-        frame.add(new JLabel("UID"));
-        frame.add(new JLabel("Số Q"));
-        frame.add(new JLabel("Kỹ năng"));
-        frame.add(new JLabel("Tân thủ"));
-        frame.add(new JLabel("Trợ thủ"));
+        panel.add(new JLabel("UID"));
+        panel.add(new JLabel("Số Q"));
+        panel.add(new JLabel("Kỹ năng"));
+        panel.add(new JLabel("Tân thủ"));
+        panel.add(new JLabel("Trợ thủ"));
 
         // add components for all 5 accounts
-        for (int i = 0; i < 5; i++) {
-            uidFields.add(new JTextField());
-            questCountFields.add(new JTextField("10"));
-            frame.add(uidFields.get(i));
-            frame.add(questCountFields.get(i));
-
-            skillButtons.add(new JButton("F1"));
-            newbieButtons.add(new JButton("F2"));
-            petButtons.add(new JButton("F1"));
-            frame.add(skillButtons.get(i));
-            frame.add(newbieButtons.get(i));
-            frame.add(petButtons.get(i));
+        for (int i = 0; i < 3; i++) {
+            addAccount(panel, uidFields, questCountFields, skillButtons, newbieButtons, petButtons);
         }
 
-        // change skill hotkey when pressing the button
-        for (int i = 0; i < 15; i++) {
-            JButton button;
-            if (i % 3 == 0) {
-                button = skillButtons.get(i / 3);
-            } else if (i % 3 == 1) {
-                button = newbieButtons.get((i - 1) / 3);
-            } else {
-                button = petButtons.get((i - 2) / 3);
-            }
-            button.addActionListener(e -> {
-                KeyAdapter keyAdapter = new KeyAdapter() {
-                    @Override
-                    public void keyPressed(KeyEvent e) {
-                        if (functionKeys.contains(e.getKeyCode())) {
-                            button.setText(KeyEvent.getKeyText(e.getKeyCode()));
-                        } else if (e.getKeyCode() == KeyEvent.VK_C) {
-                            button.setText("Chay");
-                        }
-                        button.removeKeyListener(this);
-                    }
-                };
-                button.addKeyListener(keyAdapter);
-            });
-        }
+        Image plusIcon = new ImageIcon("app/tesseract/plus-icon.png").getImage();
+        ImageIcon resizedIcon = new ImageIcon(plusIcon.getScaledInstance(15, 15, java.awt.Image.SCALE_SMOOTH));
 
-        frame.add(new JPanel());
-        frame.add(new JPanel());
-        frame.add(new JPanel());
+        JButton plusButton = new JButton(resizedIcon);
+        plusButton.setBorderPainted(false);
+        plusButton.setContentAreaFilled(false);
+        plusButton.setHorizontalAlignment(SwingConstants.LEFT);
+        panel.add(plusButton);
+
+        JPanel empty1 = new JPanel();
+        JPanel empty2 = new JPanel();
+        panel.add(empty1);
+        panel.add(empty2);
 
         JButton stopButton = new JButton("Dừng");
         JButton startButton = new JButton("Bắt đầu");
@@ -105,9 +85,63 @@ public class App {
             }
         });
 
-        frame.add(stopButton);
-        frame.add(startButton);
+        plusButton.addActionListener(e -> {
+            if (uidFields.size() >= 10) {
+                return;
+            }
+            panel.remove(startButton);
+            panel.remove(stopButton);
+            panel.remove(empty2);
+            panel.remove(empty1);
+            panel.remove(plusButton);
+            addAccount(panel, uidFields, questCountFields, skillButtons, newbieButtons, petButtons);
+            frame.setSize(450,35 * (uidFields.size() + 2) + 5 * (uidFields.size() + 1) + 10);
+            panel.setLayout(new GridLayout(uidFields.size() + 2, 5, 5, 5));
+            panel.add(plusButton);
+            panel.add(empty1);
+            panel.add(empty2);
+            panel.add(stopButton);
+            panel.add(startButton);
+        });
+
+        panel.add(stopButton);
+        panel.add(startButton);
         frame.setVisible(true);
+    }
+    private static void addAccount(JPanel panel, List<JTextField> uidFields, List<JTextField> questCountFields, List<JButton> skillButtons, List<JButton> newbieButtons, List<JButton> petButtons) {
+        int i = uidFields.size();
+        uidFields.add(new JTextField());
+        questCountFields.add(new JTextField("10"));
+
+        panel.add(uidFields.get(i));
+        panel.add(questCountFields.get(i));
+
+        JButton[] buttons = new JButton[] {new JButton("F1"), new JButton("F2"), new JButton("F1")};
+        for (int j = 0; j < 3; j++) {
+            JButton button = buttons[j];
+            button.addActionListener(e -> {
+                KeyAdapter keyAdapter = new KeyAdapter() {
+                    @Override
+                    public void keyPressed(KeyEvent e) {
+                        if (functionKeys.contains(e.getKeyCode())) {
+                            button.setText(KeyEvent.getKeyText(e.getKeyCode()));
+                        } else if (e.getKeyCode() == KeyEvent.VK_C) {
+                            button.setText("Chay");
+                        }
+                        button.removeKeyListener(this);
+                    }
+                };
+                button.addKeyListener(keyAdapter);
+            });
+        }
+
+        skillButtons.add(buttons[0]);
+        newbieButtons.add(buttons[1]);
+        petButtons.add(buttons[2]);
+
+        panel.add(skillButtons.get(i));
+        panel.add(newbieButtons.get(i));
+        panel.add(petButtons.get(i));
     }
     private static void parseAccounts(List<Integer> UIDs, List<Integer> questCounts, List<Integer> skills, List<Integer> newbies, List<Integer> pets,
                                       List<JTextField> uidFields, List<JTextField> questCountFields, List<JButton> skillButtons, List<JButton> newbieButtons, List<JButton> petButtons) {
