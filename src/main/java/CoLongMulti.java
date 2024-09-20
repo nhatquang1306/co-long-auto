@@ -272,7 +272,7 @@ public class CoLongMulti {
                     if (arrived(queue, k, handle)) return;
                 }
                 stillCount = System.currentTimeMillis();
-            } else if (System.currentTimeMillis() - stillCount >= 15000) {
+            } else if (System.currentTimeMillis() - stillCount >= 20000) {
                 int[] a = getCoordinates(handle, k);
                 Thread.sleep(500);
                 int[] b = getCoordinates(handle, k);
