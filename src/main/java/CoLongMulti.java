@@ -163,10 +163,11 @@ public class CoLongMulti {
         if (terminateFlag) {
             return;
         }
-        System.out.println(destination.substring(46));
-        switch (destination.charAt(46)) {
+        System.out.println(destination);
+        int index = destination.indexOf("do") + 3;
+        switch (destination.charAt(index)) {
             case 'C':
-                char c3 = destination.charAt(47);
+                char c3 = destination.charAt(index + 1);
                 if (c3 == 'u') { // cung to to
                     getOut(handle, k);
                     queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
@@ -186,7 +187,7 @@ public class CoLongMulti {
                 queue.offer(new Dest(30, 199, "ngan cau"));
                 break;
             case 'T':
-                char c2 = destination.charAt(49);
+                char c2 = destination.charAt(index + 3);
                 if (c2 == 'm') { // tram lang
                     getOut(handle, k);
                     queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
@@ -207,7 +208,7 @@ public class CoLongMulti {
                 }
                 break;
             case 'M': // ma khong quan
-                char c = destination.charAt(49);
+                char c = destination.charAt(index + 3);
                 if (c == 'K') {
                     getOut(handle, k);
                     queue.offer(new Dest(102, 497, 161, 49, "dieu phong"));
@@ -230,7 +231,7 @@ public class CoLongMulti {
                 queue.offer(new Dest(26, 57, "luu huong"));
                 break;
             case 'H': // han thuan + hac sinh y
-                char c4 = destination.charAt(48);
+                char c4 = destination.charAt(index + 2);
                 if (c4 == 'n') {
                     queue.offer(new Dest(29, 84, "binh khi"));
                 } else {
@@ -336,26 +337,19 @@ public class CoLongMulti {
         while (!terminateFlag) {
             Color color = getPixelColor(handle, 231, 201);
             int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-            System.out.println(color);
             if (r >= g && g > b) {
-                System.out.println("gi cung so");
                 characterAttack(handle, k);
-                petAttack(handle, k);
             } else if (r < g && g > b) {
-                System.out.println("tan thu");
                 newbieAttack(handle, k);
-                petAttack(handle, k);
             } else if (r < g && g < b) {
-                System.out.println("tro thu");
                 defense(handle, k);
-                petAttack(handle, k);
             } else if (r > g && g < b) {
-                System.out.println("nhan vat");
                 characterAttack(handle, k);
-                petAttack(handle, k);
             } else {
                 continue;
             }
+            Thread.sleep(400);
+            petAttack(handle, k);
             break;
         }
         Thread.sleep(4000);
@@ -372,6 +366,7 @@ public class CoLongMulti {
                     for (char c : numberTesseracts[k].doOCR(image).toCharArray()) {
                         if (c >= '0' && c <= '9') {
                             defense(handle, k);
+                            Thread.sleep(400);
                             petDefense(handle, k);
                             finished = true;
                         }
