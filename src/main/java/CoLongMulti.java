@@ -283,17 +283,15 @@ public class CoLongMulti {
                         click(238, 504, handle, k);
                         click(736, 200, handle, k);
                         click(651, 268, handle, k);
-                    } else if (queue.peek().methodId == -1) {
+                    } else if (queue.peek().methodId == -1 && queue.peek().mapX != 472) {
                         click(766, 183, handle, k);
                         click(queue.peek().mapX, queue.peek().mapY, handle, k);
-                        click(766, 183, handle, k);
                     }
                 }
                 stillCount = System.currentTimeMillis();
             }
             Thread.sleep(200);
         }
-
     }
 
     private void startMovement(Queue<Dest> queue, HWND handle, int k) throws InterruptedException, TesseractException {
@@ -337,15 +335,21 @@ public class CoLongMulti {
         while (!terminateFlag) {
             Color color = getPixelColor(handle, 231, 201);
             int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-            if (r >= g && g > b) {
+            System.out.println(color);
+            if (r == 239) {
+                System.out.println("gi cung so");
                 characterAttack(handle, k);
-            } else if (r < g && g > b) {
+            } else if (r == 143) {
+                System.out.println("tan thu");
                 newbieAttack(handle, k);
-            } else if (r < g && g < b) {
+            } else if (r == 111) {
+                System.out.println("tro thu");
                 defense(handle, k);
-            } else if (r > g && g < b) {
+            } else if (r == 175 || r == 206) {
+                System.out.println("nhan vat");
                 characterAttack(handle, k);
             } else {
+                Thread.sleep(200);
                 continue;
             }
             Thread.sleep(400);
@@ -457,14 +461,17 @@ public class CoLongMulti {
         if (terminateFlag) {
             return;
         }
-        int[] arr = new int[]{296, 314, 332, 278};
-        for (int i = 0; i < 4; i++) {
+        int[] arr = new int[]{296, 314, 332};
+        boolean last = true;
+        for (int i = 0; i < 3 && !terminateFlag; i++) {
             BufferedImage image = captureWindow(handle, 223, arr[i], 70, 20);
             if (removeDiacritics(tesseracts[k].doOCR(image)).contains("van tieu")) {
+                last = false;
                 click(251, arr[i] + 10, handle, k);
                 break;
             }
         }
+        if (last) click(251, 288, handle, k);
         Thread.sleep(500);
         waitForPrompt(224, 257, 150, 20, "[", handle, k);
         click(557, 266, handle, k); // click on final text box;
