@@ -47,7 +47,7 @@ public class App {
             addAccount(panel, uidFields, questCountFields, skillButtons, newbieButtons, petButtons);
         }
 
-        Image plusIcon = new ImageIcon("app/tesseract/plus-icon.png").getImage();
+        Image plusIcon = new ImageIcon("input/tesseract/plus-icon.png").getImage();
         ImageIcon resizedIcon = new ImageIcon(plusIcon.getScaledInstance(15, 15, java.awt.Image.SCALE_SMOOTH));
 
         JButton plusButton = new JButton(resizedIcon);
