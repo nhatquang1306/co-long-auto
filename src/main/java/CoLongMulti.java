@@ -92,10 +92,11 @@ public class CoLongMulti {
         }
         terminateFlag = false;
     }
+    public void setTerminateFlag() {
+        terminateFlag = true;
+    }
 
     public void run() throws NativeHookException, TesseractException, InterruptedException {
-        initiateTerminationListener();
-
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         GraphicsConfiguration gc = device.getDefaultConfiguration();
         scale = gc.getDefaultTransform().getScaleX();
@@ -119,15 +120,12 @@ public class CoLongMulti {
                         parseDestination(queue, handles[k], k);
                         traveling(queue, "truong thanh tieu.", visited, handles[k], k);
                     }
-                    System.out.println("finished " + accounts[k]);
                 } catch (Exception _) {
 
                 }
             });
             threads[i].start();
         }
-
-        GlobalScreen.unregisterNativeHook();
     }
 
     public static BufferedImage captureWindow(HWND hwnd, int x, int y, int width, int height) {
@@ -312,43 +310,58 @@ public class CoLongMulti {
 
 
     private void progressMatch(HWND handle, int k) throws InterruptedException, TesseractException {
-        if (terminateFlag) {
-            return;
-        }
         // gi cung so: 239 239 15
         // ta so tan thu: 143 175 111 / 143 206 100
         // ta so tro thu: 79 175 176 / 111 175 176 / 115 191 192 / 83 177 178
         // tro thu so ta: 170 113 143 / 142 111 143 / 170 113 175 / 175 143 175
-        Color color = getPixelColor(handle, 225, 196);
-        int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-        if (r == 239) {
-            characterAttack(handle, k);
-            petAttack(handle, k);
-        } else if (r < g && g > b) {
-            newbieAttack(handle, k);
-            petDefense(handle, k);
-        } else if (r < g && g < b) {
-            defense(handle, k);
-            petAttack(handle, k);
-        } else if (r > g && g < b) {
-            characterAttack(handle, k);
-            petDefense(handle, k);
-        } else {
-            characterAttack(handle, k);
-            petAttack(handle, k);
+        synchronized (locks[k]) {
+            long x = Math.round(267 * scale);
+            long y = Math.round(540 * scale);
+            LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
+            User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
+            Thread.sleep(200);
         }
-        long start = System.currentTimeMillis();
-        boolean finished = false;
-        while (isInBattle(handle) && !terminateFlag) {
-            if (finished || System.currentTimeMillis() - start <= 4000) {
+        while (!terminateFlag) {
+            Color color = getPixelColor(handle, 225, 196);
+            int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
+            if (r == 239) {
+                characterAttack(handle, k);
+                petAttack(handle, k);
+            } else if (r == 143) {
+                newbieAttack(handle, k);
+                Thread.sleep(200);
+                petDefense(handle, k);
+            } else if (b == 176) {
+                defense(handle, k);
+                petAttack(handle, k);
+            } else if (b == 143 || b == 175) {
+                characterAttack(handle, k);
+                Thread.sleep(200);
+                petDefense(handle, k);
+            } else {
                 continue;
             }
-            BufferedImage image = captureWindow(handle, 337, 54, 150, 70);
-            for (char c : numberTesseracts[k].doOCR(image).toCharArray()) {
-                if (c >= '0' && c <= '9') {
-                    defense(handle, k);
-                    petDefense(handle, k);
-                    finished = true;
+            break;
+        }
+        Thread.sleep(4000);
+        boolean finished = false;
+        while (isInBattle(handle) && !terminateFlag) {
+            if (finished) {
+                continue;
+            }
+            Color color = getPixelColor(handle, 166, 231);
+            int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
+            if (r == 48 && b == 83 && (g == 79 || g == 111)) {
+                while (!finished && !terminateFlag) {
+                    BufferedImage image = captureWindow(handle, 337, 54, 150, 70);
+                    for (char c : numberTesseracts[k].doOCR(image).toCharArray()) {
+                        if (c >= '0' && c <= '9') {
+                            defense(handle, k);
+                            petDefense(handle, k);
+                            finished = true;
+                        }
+                    }
+                    Thread.sleep(200);
                 }
             }
             Thread.sleep(200);
@@ -669,29 +682,7 @@ public class CoLongMulti {
         return res.toString();
     }
 
-    private void initiateTerminationListener() throws NativeHookException {
-        Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
-        logger.setLevel(Level.OFF);
 
-        GlobalScreen.registerNativeHook();
-        GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
-            @Override
-            public void nativeKeyTyped(NativeKeyEvent e) {
-            }
-
-            @Override
-            public void nativeKeyPressed(NativeKeyEvent e) {
-            }
-
-            @Override
-            public void nativeKeyReleased(NativeKeyEvent e) {
-                if (e.getKeyCode() == NativeKeyEvent.VC_F9) {
-                    System.out.println("STOP");
-                    terminateFlag = true; // Terminate the application
-                }
-            }
-        });
-    }
 
     public static Color getPixelColor(HWND hwnd, int x, int y) {
         x -= 3;

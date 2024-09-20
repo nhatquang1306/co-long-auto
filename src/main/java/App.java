@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.*;
@@ -25,7 +27,6 @@ public class App {
         List<JButton> petButtons = new ArrayList<>();
 
 
-        Map<String, Integer> keyMap = getKeyMap();
         Set<Integer> functionKeys = Set.of(KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4,
                 KeyEvent.VK_F5, KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8);
 
@@ -80,54 +81,66 @@ public class App {
         frame.add(new JPanel());
         frame.add(new JPanel());
 
-        JButton saveButton = new JButton("Lưu");
-        frame.add(saveButton);
-        saveButton.addActionListener(e -> {
-            UIDs.clear();
-            questCounts.clear();
-            for (int i = 0; i < uidFields.size(); i++) {
-                String a = uidFields.get(i).getText();
-                String b = questCountFields.get(i).getText();
-                if (a.isBlank() || b.isBlank()) {
-                    continue;
-                }
-                try {
-                    int UID = Integer.parseInt(a);
-                    int questCount = Integer.parseInt(b);
-                    if (UID <= 1) {
-                        uidFields.get(i).setText("");
-                        questCountFields.get(i).setText("10");
-                        continue;
-                    } else if (questCount <= 0 || questCount >= 10) {
-                        questCount = 10;
-                        questCountFields.get(i).setText("10");
-                    }
-                    UIDs.add(UID);
-                    questCounts.add(questCount);
-                    skills.add(keyMap.get(skillButtons.get(i).getText()));
-                    newbies.add(keyMap.get(newbieButtons.get(i).getText()));
-                    pets.add(keyMap.get(petButtons.get(i).getText()));
-                } catch (NumberFormatException _) {
-                    uidFields.get(i).setText("");
-                    questCountFields.get(i).setText("10");
-                }
-            }
-        });
-
+        JButton stopButton = new JButton("Dừng");
         JButton startButton = new JButton("Bắt đầu");
         startButton.addActionListener(e -> {
+            parseAccounts(UIDs, questCounts, skills, newbies, pets, uidFields, questCountFields, skillButtons, newbieButtons, petButtons);
             if (UIDs.isEmpty()) {
                 return;
             }
             try {
                 CoLongMulti colong = new CoLongMulti(UIDs, questCounts, skills, newbies, pets);
+                ActionListener actionListener = new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        colong.setTerminateFlag();
+                        stopButton.removeActionListener(this);
+
+                    }
+                };
+                stopButton.addActionListener(actionListener);
                 colong.run();
             } catch (Exception _) {
 
             }
         });
+
+        frame.add(stopButton);
         frame.add(startButton);
         frame.setVisible(true);
+    }
+    private static void parseAccounts(List<Integer> UIDs, List<Integer> questCounts, List<Integer> skills, List<Integer> newbies, List<Integer> pets,
+                                      List<JTextField> uidFields, List<JTextField> questCountFields, List<JButton> skillButtons, List<JButton> newbieButtons, List<JButton> petButtons) {
+        Map<String, Integer> keyMap = getKeyMap();
+        UIDs.clear();
+        questCounts.clear();
+        for (int i = 0; i < uidFields.size(); i++) {
+            String a = uidFields.get(i).getText();
+            String b = questCountFields.get(i).getText();
+            if (a.isBlank() || b.isBlank()) {
+                continue;
+            }
+            try {
+                int UID = Integer.parseInt(a);
+                int questCount = Integer.parseInt(b);
+                if (UID <= 1) {
+                    uidFields.get(i).setText("");
+                    questCountFields.get(i).setText("10");
+                    continue;
+                } else if (questCount <= 0 || questCount >= 10) {
+                    questCount = 10;
+                    questCountFields.get(i).setText("10");
+                }
+                UIDs.add(UID);
+                questCounts.add(questCount);
+                skills.add(keyMap.get(skillButtons.get(i).getText()));
+                newbies.add(keyMap.get(newbieButtons.get(i).getText()));
+                pets.add(keyMap.get(petButtons.get(i).getText()));
+            } catch (NumberFormatException _) {
+                uidFields.get(i).setText("");
+                questCountFields.get(i).setText("10");
+            }
+        }
     }
 
     private static Map<String, Integer> getKeyMap() {
