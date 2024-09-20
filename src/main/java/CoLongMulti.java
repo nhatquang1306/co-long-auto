@@ -97,7 +97,7 @@ public class CoLongMulti {
         terminateFlag = false;
     }
 
-    public void run() {
+    public void run() throws InterruptedException {
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         GraphicsConfiguration gc = device.getDefaultConfiguration();
         scale = gc.getDefaultTransform().getScaleX();
@@ -493,7 +493,7 @@ public class CoLongMulti {
         if (terminateFlag) {
             return;
         }
-        click(126, 270, handle, k);
+        click(131, 229, handle, k);
         waitForPrompt(224, 257, 100, 20, "binh khi", handle, k);
         click(323, 456, handle, k);
         while (!getLocation(handle, k).contains("danh nhan") && !terminateFlag) {
