@@ -40,22 +40,26 @@ public class test {
         GraphicsConfiguration gc = device.getDefaultConfiguration();
         scale = gc.getDefaultTransform().getScaleX();
 
-        User32 user32 = User32.INSTANCE;
-
-        List<HWND> list = new ArrayList<>();
-        user32.EnumWindows((hwnd, arg) -> {
-            char[] text = new char[100];
-            user32.GetWindowText(hwnd, text, 100);
-            String title = new String(text).trim();
-            if (title.equals("http://colongonline.com (Minh Nguyệt)")) {
-                list.add(hwnd);
-            }
-            return true;
-        }, null);
-//        HWND handle = list.get(0);
-        sendKeyPress();
+        int UID = 411;
+        String username = "Nezumi";
+        HWND handle = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
+        System.out.println(getPixelColor(handle, 378, 90));
 //        BufferedImage image = captureWindow(handle, 145, 225, 140, 80);
 //        ImageIO.write(image, "png", new File("screenshot.png"));
+    }
+
+    public static Color getPixelColor(HWND hwnd, int x, int y) {
+        x -= 3;
+        y -= 26;
+        // Get the device context of the window
+        HDC hdc = User32.INSTANCE.GetDC(hwnd);
+
+        // Get the color of the specified pixel
+        int pixelColor = CoLongMulti.MyGDI32.INSTANCE.GetPixel(hdc, x, y);
+        User32.INSTANCE.ReleaseDC(hwnd, hdc); // Release the DC
+
+        // Return the color as a Color object
+        return new Color(pixelColor & 0xFF, (pixelColor >> 8) & 0xFF, (pixelColor >> 16) & 0xFF);
     }
 
     private static int[] getMouseLocation(HWND handle) throws InterruptedException {

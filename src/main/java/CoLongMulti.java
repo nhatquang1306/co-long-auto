@@ -344,25 +344,18 @@ public class CoLongMulti {
         }
         Thread.sleep(4000);
         boolean finished = false;
+        // dung danh: 166 231 -> 48 83 79/111
         while (isInBattle(handle) && !terminateFlag) {
             if (finished) {
                 continue;
             }
-            Color color = getPixelColor(handle, 166, 231);
+            Color color = getPixelColor(handle, 378, 90);
             int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-            if (r == 48 && b == 83 && (g == 79 || g == 111)) {
-                while (!finished && !terminateFlag) {
-                    BufferedImage image = captureWindow(handle, 337, 54, 150, 70);
-                    for (char c : numberTesseracts[k].doOCR(image).toCharArray()) {
-                        if (c >= '0' && c <= '9') {
-                            defense(handle, k);
-                            Thread.sleep(400);
-                            petDefense(handle, k);
-                            finished = true;
-                        }
-                    }
-                    Thread.sleep(200);
-                }
+            if (r == 254 && g == 254 && b == 254) {
+                defense(handle, k);
+                Thread.sleep(400);
+                petDefense(handle, k);
+                finished = true;
             }
             Thread.sleep(200);
         }
@@ -622,7 +615,7 @@ public class CoLongMulti {
         return image;
     }
 
-    public static Color getPixelColor(HWND hwnd, int x, int y) {
+    public Color getPixelColor(HWND hwnd, int x, int y) {
         x -= 3;
         y -= 26;
         // Get the device context of the window
