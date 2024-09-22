@@ -163,7 +163,6 @@ public class CoLongMulti {
         if (terminateFlag) {
             return;
         }
-        System.out.println(destination);
         int index = destination.indexOf("do") + 3;
         switch (destination.charAt(index)) {
             case 'C':
@@ -327,18 +326,13 @@ public class CoLongMulti {
         while (!terminateFlag) {
             Color color = getPixelColor(handle, 231, 201);
             int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-            System.out.println(color);
             if (r == 239) {
-                System.out.println("gi cung so");
                 characterAttack(handle, k);
             } else if (r == 143) {
-                System.out.println("tan thu");
                 newbieAttack(handle, k);
             } else if (r == 111) {
-                System.out.println("tro thu");
                 defense(handle, k);
             } else if (r == 175 || r == 206) {
-                System.out.println("nhan vat");
                 characterAttack(handle, k);
             } else {
                 Thread.sleep(200);
@@ -379,12 +373,8 @@ public class CoLongMulti {
             return true;
         }
         if (queue.peek().methodId == 0) {
-            BufferedImage image = captureWindow(handle, 224, 257, 150, 20);
-            if (!tesseracts[k].doOCR(image).contains("[")) {
-                Thread.sleep(2000);
-                while (!fixFinishQuest(queue.peek().x, queue.peek().y, handle, k)) {
-                    Thread.sleep(200);
-                }
+            while (!waitForPrompt(224, 257, 150, 20, "[", handle, k)) {
+                fixFinishQuest(queue.peek().x, queue.peek().y, handle, k);
             }
             finishQuest(handle, k);
             return true;
@@ -395,9 +385,9 @@ public class CoLongMulti {
         }
     }
 
-    private boolean fixFinishQuest(int x, int y, HWND handle, int k) throws InterruptedException, TesseractException {
+    private void fixFinishQuest(int x, int y, HWND handle, int k) throws InterruptedException, TesseractException {
         if (terminateFlag) {
-            return false;
+            return;
         }
         switch (x) {
             case 10: // hac sinh y 10 73
@@ -446,7 +436,6 @@ public class CoLongMulti {
             case 74: // tram lang 74 86
                 click(250, 201, handle, k);
         }
-        return waitForPrompt(224, 257, 150, 20, "[", handle, k);
     }
 
     private void finishQuest(HWND handle, int k) throws TesseractException, InterruptedException {
