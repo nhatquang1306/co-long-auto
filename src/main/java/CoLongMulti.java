@@ -373,10 +373,13 @@ public class CoLongMulti {
             return true;
         }
         if (queue.peek().methodId == 0) {
-            while (!waitForPrompt(224, 257, 150, 20, "[", handle, k)) {
-                fixFinishQuest(queue.peek().x, queue.peek().y, handle, k);
+            while (!terminateFlag) {
+                if (!waitForPrompt(224, 257, 150, 20, "[", handle, k)) {
+                    fixFinishQuest(queue.peek().x, queue.peek().y, handle, k);
+                } else if (finishQuest(handle, k)) {
+                    break;
+                }
             }
-            finishQuest(handle, k);
             return true;
         } else {
             queue.poll();
@@ -438,24 +441,21 @@ public class CoLongMulti {
         }
     }
 
-    private void finishQuest(HWND handle, int k) throws TesseractException, InterruptedException {
+    private boolean finishQuest(HWND handle, int k) throws TesseractException, InterruptedException {
         if (terminateFlag) {
-            return;
+            return true;
         }
-        int[] arr = new int[]{296, 314, 332};
-        boolean last = true;
-        for (int i = 0; i < 3 && !terminateFlag; i++) {
+        int[] arr = new int[]{296, 314, 278, 332};
+        for (int i = 0; i < 4 && !terminateFlag; i++) {
             BufferedImage image = captureWindow(handle, 223, arr[i], 70, 20);
             if (removeDiacritics(tesseracts[k].doOCR(image)).contains("van tieu")) {
-                last = false;
                 click(251, arr[i] + 10, handle, k);
-                break;
+                waitForPrompt(224, 257, 150, 20, "[", handle, k);
+                click(557, 266, handle, k); // click on final text box;
+                return true;
             }
         }
-        if (last) click(251, 288, handle, k);
-        Thread.sleep(500);
-        waitForPrompt(224, 257, 150, 20, "[", handle, k);
-        click(557, 266, handle, k); // click on final text box;
+        return false;
     }
 
     private void getOut(HWND handle, int k) throws InterruptedException, TesseractException {

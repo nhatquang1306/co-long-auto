@@ -15,6 +15,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.security.Key;
 import java.text.Normalizer;
 import java.util.*;
 import java.util.List;
@@ -33,6 +34,7 @@ import static com.sun.jna.platform.win32.WinUser.*;
 
 public class test {
     private static double scale;
+
     public static void main(String[] args) throws InterruptedException, IOException {
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         GraphicsConfiguration gc = device.getDefaultConfiguration();
@@ -50,10 +52,12 @@ public class test {
             }
             return true;
         }, null);
-        HWND handle = list.get(0);
-        BufferedImage image = captureWindow(handle, 145, 225, 140, 80);
-        ImageIO.write(image, "png", new File("screenshot.png"));
+//        HWND handle = list.get(0);
+        sendKeyPress();
+//        BufferedImage image = captureWindow(handle, 145, 225, 140, 80);
+//        ImageIO.write(image, "png", new File("screenshot.png"));
     }
+
     private static int[] getMouseLocation(HWND handle) throws InterruptedException {
         Thread.sleep(2000);
         RECT r = new RECT();
@@ -63,6 +67,16 @@ public class test {
         rect.y = (int) Math.round(rect.y / scale);
         Point m = MouseInfo.getPointerInfo().getLocation();
         return new int[]{m.x - rect.x, m.y - rect.y};
+    }
+
+    private static void sendKeyPress() {
+        int UID = 411;
+        String username = "Nezumi";
+        HWND hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
+
+        // Post the F1 keydown message to the target thread
+        User32.INSTANCE.PostMessage(hwnd, WM_KEYDOWN, new WinDef.WPARAM(KeyEvent.VK_M), new WinDef.LPARAM(0));
+
     }
 
     public static BufferedImage captureWindow(HWND hwnd, int x, int y, int width, int height) {
@@ -108,5 +122,16 @@ public class test {
             }
         }
         return image;
+    }
+    public interface WinUser {
+        int WM_LBUTTONDOWN = 0x0201; // Left mouse button down
+        int WM_LBUTTONUP = 0x0202; // Left mouse button up
+        int MK_LBUTTON = 0x0001; // Left button state
+        int WM_RBUTTONDOWN = 0x0204; // Right mouse button down
+        int WM_RBUTTONUP = 0x0205;
+        int MK_RBUTTON = 0x0002;
+        int WM_MOUSEMOVE = 0x0200;
+        int WM_KEYDOWN = 0x0100;
+        int WM_KEYUP = 0x0101;
     }
 }
