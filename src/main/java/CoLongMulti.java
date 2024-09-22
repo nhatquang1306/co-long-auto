@@ -97,7 +97,7 @@ public class CoLongMulti {
         terminateFlag = false;
     }
 
-    public void run() throws InterruptedException {
+    public void run() throws InterruptedException, TesseractException {
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         GraphicsConfiguration gc = device.getDefaultConfiguration();
         scale = gc.getDefaultTransform().getScaleX();
@@ -272,21 +272,13 @@ public class CoLongMulti {
                     if (arrived(queue, k, handle)) return;
                 }
                 stillCount = System.currentTimeMillis();
-            } else if (System.currentTimeMillis() - stillCount >= 20000) {
-                int[] a = getCoordinates(handle, k);
+            } else if (System.currentTimeMillis() - stillCount >= 50000) {
+                click(774, 115, handles[k], k);
+                closeTutorial(handles[k], k);
                 Thread.sleep(500);
-                int[] b = getCoordinates(handle, k);
-                if (a[0] == b[0] && a[1] == b[1] && !isInBattle(handle) && !terminateFlag) {
-                    if (queue.peek().methodId == 0) {
-                        click(736, 200, handle, k);
-                        click(238, 194, handle, k);
-                        click(238, 504, handle, k);
-                        click(736, 200, handle, k);
-                        click(651, 268, handle, k);
-                    } else if (queue.peek().methodId == -1 && queue.peek().mapX != 472) {
-                        click(766, 183, handle, k);
-                        click(queue.peek().mapX, queue.peek().mapY, handle, k);
-                    }
+                click(481, 477, handles[k], k);
+                if (queue.peek().methodId == 0) {
+                    click(651, 268, handle, k);
                 }
                 stillCount = System.currentTimeMillis();
             }
@@ -705,7 +697,7 @@ public class CoLongMulti {
             long y = Math.round((b - 26) * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
             User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
-            Thread.sleep(100);
+            Thread.sleep(250);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONDOWN, new WPARAM(WinUser.MK_LBUTTON), lParam);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
             Thread.sleep(500);
