@@ -148,6 +148,9 @@ public class App {
         Map<String, Integer> keyMap = getKeyMap();
         UIDs.clear();
         questCounts.clear();
+        skills.clear();
+        newbies.clear();
+        pets.clear();
         for (int i = 0; i < uidFields.size(); i++) {
             String a = uidFields.get(i).getText();
             String b = questCountFields.get(i).getText();
