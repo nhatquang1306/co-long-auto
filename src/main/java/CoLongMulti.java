@@ -110,6 +110,7 @@ public class CoLongMulti {
                 try {
                     Set<String> visited = new HashSet<>();
                     visited.add("truong thanh tieu.");
+                    visited.add("thanh dan.");
                     for (int j = 0; j < questCount[k]; j++) {
                         Queue<Dest> queue = new LinkedList<>();
                         goToTTTC(handles[k], k);
@@ -467,6 +468,7 @@ public class CoLongMulti {
         if (terminateFlag) {
             return;
         }
+        Thread.sleep(1000);
         click(131, 229, handle, k);
         waitForPrompt(224, 257, 100, 20, "binh khi", handle, k);
         click(323, 456, handle, k);
