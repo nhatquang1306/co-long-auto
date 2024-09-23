@@ -293,11 +293,17 @@ public class CoLongMulti {
         Dest dest = queue.peek();
         switch (dest.methodId) {
             case -1:
+                if (dest.mapX == 688) {
+                    System.out.println(accounts[k] + " dang di ktdg");
+                }
                 click(766, 183, handle, k);
                 click(dest.mapX, dest.mapY, handle, k);
                 click(766, 183, handle, k);
                 break;
             case 0:
+                if ((dest.x == 29 && dest.y == 70) || dest.x == 14 || dest.x == 32 || dest.x == 38) {
+                    System.out.println(accounts[k] + " o ktdg");
+                }
                 click(651, 268, handle, k);
                 break;
             case 2:
@@ -324,6 +330,9 @@ public class CoLongMulti {
         // tro thu so ta: 175 143 175 / 206 146 207
         // ta so tan thu: 143 175 111
         // ta so tro thu: 111 207 215
+        while (!isWhite(handle, 378, 90) && !terminateFlag) {
+            Thread.sleep(200);
+        }
         while (!terminateFlag) {
             Color color = getPixelColor(handle, 231, 201);
             int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
@@ -339,7 +348,7 @@ public class CoLongMulti {
                 Thread.sleep(200);
                 continue;
             }
-            Thread.sleep(400);
+            Thread.sleep(500);
             petAttack(handle, k);
             break;
         }
@@ -348,13 +357,12 @@ public class CoLongMulti {
         // dung danh: 166 231 -> 48 83 79/111
         while (isInBattle(handle) && !terminateFlag) {
             if (finished) {
+                Thread.sleep(200);
                 continue;
             }
-            Color color = getPixelColor(handle, 378, 90);
-            int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-            if (r == 254 && g == 254 && b == 254) {
+            if (isWhite(handle, 378, 90)) {
                 defense(handle, k);
-                Thread.sleep(400);
+                Thread.sleep(500);
                 petDefense(handle, k);
                 finished = true;
             }
@@ -629,6 +637,12 @@ public class CoLongMulti {
 
         // Return the color as a Color object
         return new Color(pixelColor & 0xFF, (pixelColor >> 8) & 0xFF, (pixelColor >> 16) & 0xFF);
+    }
+
+    private boolean isWhite(HWND handle, int x, int y) {
+        Color color = getPixelColor(handle, x, y);
+        int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
+        return r == 254 && g == 254 && b == 254;
     }
 
     public String removeDiacritics(String text) {
