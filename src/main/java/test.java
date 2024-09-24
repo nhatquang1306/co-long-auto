@@ -40,10 +40,11 @@ public class test {
         GraphicsConfiguration gc = device.getDefaultConfiguration();
         scale = gc.getDefaultTransform().getScaleX();
 
-        int UID = 411;
-        String username = "Nezumi";
+        int UID = 146;
+        String username = "Ám";
         HWND handle = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
         System.out.println(getPixelColor(handle, 378, 90));
+        System.out.println(Arrays.toString(getMouseLocation(handle)));
 //        BufferedImage image = captureWindow(handle, 145, 225, 140, 80);
 //        ImageIO.write(image, "png", new File("screenshot.png"));
     }

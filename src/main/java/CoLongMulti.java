@@ -50,7 +50,7 @@ public class CoLongMulti {
     // attack enemy next turn
     // check for quest when first booting up
 
-    public CoLongMulti(List<Integer> UIDs, List<Integer> questCounts, List<Integer> skillButtons, List<Integer> newbieButtons, List<Integer> petButtons) throws Exception {
+    public CoLongMulti(List<Integer> UIDs, List<Integer> questCounts, List<Integer> skillButtons, List<Integer> newbieButtons, List<Integer> petButtons, List<Boolean> flags) throws Exception {
         int n = UIDs.size();
         User32 user32 = User32.INSTANCE;
         Map<Integer, HWND> handleMap = getAllWindows(user32);
@@ -61,7 +61,7 @@ public class CoLongMulti {
         newbies = new int[n];
         pets = new int[n];
         handles = new HWND[n];
-        flags = new int[n][2];
+        this.flags = new int[n][3];
 
 
         for (int i = 0; i < n; i++) {
@@ -74,8 +74,9 @@ public class CoLongMulti {
             skills[i] = skillButtons.get(i);
             newbies[i] = newbieButtons.get(i);
             pets[i] = petButtons.get(i);
-            flags[i][0] = 445;
-            flags[i][1] = 417;
+            this.flags[i][0] = 445;
+            this.flags[i][1] = 417;
+            this.flags[i][2] = flags.get(i) ? 0 : 1;
         }
 
         tesseracts = new Tesseract[n];
@@ -131,10 +132,15 @@ public class CoLongMulti {
         }
         click(569, 586, handle, k);
         rightClick(flags[k], handle, k); // right click on flag
-        waitForPrompt(224, 278, 180, 20, "toa do 1", handle, k);
-        click(348, 287, handle, k); // click on toa do
-        waitForPrompt(224, 278, 120, 20, "dua ta toi do", handle, k);
-        click(259, 286, handle, k); // click take me there
+        if (flags[k][2] == 0) {
+            waitForPrompt(224, 278, 180, 20, "toa do 1", handle, k);
+            click(348, 287, handle, k); // click on toa do
+            waitForPrompt(224, 278, 120, 20, "dua ta toi do", handle, k);
+            click(259, 286, handle, k); // click take me there
+        } else {
+            waitForPrompt(223, 351, 80, 20, "bach ly", handle, k);
+            click(321, 359, handle, k);
+        }
         while (!getLocation(handle, k).contains("truong thanh") && !terminateFlag) {
             Thread.sleep(200);
         }
@@ -297,6 +303,7 @@ public class CoLongMulti {
                     System.out.println(accounts[k] + " dang di ktdg");
                 }
                 click(766, 183, handle, k);
+                closeTutorial(handle, k);
                 click(dest.mapX, dest.mapY, handle, k);
                 click(766, 183, handle, k);
                 break;
