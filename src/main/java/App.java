@@ -14,7 +14,7 @@ public class App {
     public static void main(String[] args) {
         JFrame frame = new JFrame("Auto Vận Tiêu");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(500, 205);
+        frame.setSize(520, 205);
 
         JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(5, 5, 5, 5));
@@ -101,7 +101,7 @@ public class App {
             panel.remove(empty1);
             panel.remove(plusButton);
             addAccount(panel, uidFields, questCountFields, skillButtons, newbieButtons, petButtons, flagButtons);
-            frame.setSize(500,35 * (uidFields.size() + 2) + 5 * (uidFields.size() + 1) + 10);
+            frame.setSize(520,35 * (uidFields.size() + 2) + 5 * (uidFields.size() + 1) + 10);
             panel.setLayout(new GridLayout(uidFields.size() + 2, 5, 5, 5));
             panel.add(plusButton);
             panel.add(empty1);

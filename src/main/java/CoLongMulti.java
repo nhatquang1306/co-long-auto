@@ -98,7 +98,7 @@ public class CoLongMulti {
         terminateFlag = false;
     }
 
-    public void run() throws InterruptedException, TesseractException {
+    public void run() throws InterruptedException, IOException, TesseractException {
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         GraphicsConfiguration gc = device.getDefaultConfiguration();
         scale = gc.getDefaultTransform().getScaleX();
@@ -124,6 +124,7 @@ public class CoLongMulti {
             });
             threads[i].start();
         }
+
     }
 
     private void goToTTTC(HWND handle, int k) throws InterruptedException, TesseractException {
@@ -285,6 +286,10 @@ public class CoLongMulti {
                 click(481, 477, handles[k], k);
                 if (queue.peek().methodId == 0) {
                     click(651, 268, handle, k);
+                    if (queue.peek().x == 22 && location.equals("thanh dan.")) {
+                        queue.peek().x = 23;
+                        queue.peek().y = 90;
+                    }
                 }
                 stillCount = System.currentTimeMillis();
             }
@@ -337,7 +342,7 @@ public class CoLongMulti {
         // tro thu so ta: 175 143 175 / 206 146 207
         // ta so tan thu: 143 175 111
         // ta so tro thu: 111 207 215
-        while (!isWhite(handle, 378, 90) && !terminateFlag) {
+        while (!terminateFlag && (!isWhite(handle, 378, 90) || isWhite(handle, 405, 325))) {
             Thread.sleep(200);
         }
         while (!terminateFlag) {
@@ -355,7 +360,7 @@ public class CoLongMulti {
                 Thread.sleep(200);
                 continue;
             }
-            Thread.sleep(500);
+            waitForPrompt(737, 239, 50, 20, "thu", handle, k);
             petAttack(handle, k);
             break;
         }
@@ -369,7 +374,7 @@ public class CoLongMulti {
             }
             if (isWhite(handle, 378, 90)) {
                 defense(handle, k);
-                Thread.sleep(500);
+                waitForPrompt(737, 239, 50, 20, "thu", handle, k);
                 petDefense(handle, k);
                 finished = true;
             }
@@ -702,7 +707,7 @@ public class CoLongMulti {
             long y = Math.round((b - 26) * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
             User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
-            Thread.sleep(250);
+            Thread.sleep(200);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONDOWN, new WPARAM(WinUser.MK_LBUTTON), lParam);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
             Thread.sleep(500);
@@ -716,7 +721,7 @@ public class CoLongMulti {
             long y = Math.round((b - 26) * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
             User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
-            Thread.sleep(100);
+            Thread.sleep(200);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONDOWN, new WPARAM(WinUser.MK_RBUTTON), lParam);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONUP, new WPARAM(0), lParam);
             Thread.sleep(500);
