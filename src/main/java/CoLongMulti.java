@@ -1,101 +1,56 @@
-import com.sun.jna.Library;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
-import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.*;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.win32.StdCallLibrary;
-import com.sun.jna.win32.W32APIOptions;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 
+import javax.swing.*;
 import java.awt.*;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.text.Normalizer;
 import java.util.*;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.jnativehook.GlobalScreen;
-import org.jnativehook.NativeHookException;
-import org.jnativehook.keyboard.NativeKeyEvent;
-import org.jnativehook.keyboard.NativeKeyListener;
-import org.w3c.dom.css.Rect;
-
-import javax.imageio.ImageIO;
 
 import static com.sun.jna.platform.win32.WinUser.*;
 
 
 public class CoLongMulti extends Thread {
-    private final Tesseract[] tesseracts;
-    private final Tesseract[] numberTesseracts;
-    private final int[] accounts;
-    private final int[] questCount;
-    private final int[] skills;
-    private final int[] newbies;
-    private final int[] pets;
-    private HWND[] handles;
+    private final Tesseract tesseract;
+    private final int questCount;
+    private final int skill;
+    private final int newbie;
+    private final int pet;
+    private final HWND handle;
     private boolean terminateFlag;
     private double scale;
-    private Object[] locks;
-    private int[][] flags;
+    private final Object lock;
+    private final int[] flag;
+    private final JButton startButton;
 
     // note
     // attack enemy next turn
     // check for quest when first booting up
 
-    public CoLongMulti(List<Integer> UIDs, List<Integer> questCounts, List<Integer> skillButtons, List<Integer> newbieButtons, List<Integer> petButtons, List<Boolean> flags) throws Exception {
-        int n = UIDs.size();
-        User32 user32 = User32.INSTANCE;
-        Map<Integer, HWND> handleMap = getAllWindows(user32);
-
-        accounts = new int[n];
-        questCount = new int[n];
-        skills = new int[n];
-        newbies = new int[n];
-        pets = new int[n];
-        handles = new HWND[n];
-        this.flags = new int[n][3];
-
-
-        for (int i = 0; i < n; i++) {
-            if (!handleMap.containsKey(UIDs.get(i))) {
-                throw new Exception("Không có UID " + UIDs.get(i) + ".");
-            }
-            handles[i] = handleMap.get(UIDs.get(i));
-            accounts[i] = UIDs.get(i);
-            questCount[i] = questCounts.get(i);
-            skills[i] = skillButtons.get(i);
-            newbies[i] = newbieButtons.get(i);
-            pets[i] = petButtons.get(i);
-            this.flags[i][0] = 445;
-            this.flags[i][1] = 417;
-            this.flags[i][2] = flags.get(i) ? 0 : 1;
+    public CoLongMulti(int UID, int questCount, int skill, int newbie, int pet, boolean flag, JButton startButton, Map<Integer, HWND> handleMap) throws Exception {
+        handle = handleMap.get(UID);
+        if (handle == null) {
+            throw new Exception("Không có UID " + UID + ".");
         }
 
-        tesseracts = new Tesseract[n];
-        numberTesseracts = new Tesseract[n];
-        locks = new Object[n];
+        this.questCount = questCount;
+        this.skill = skill;
+        this.newbie = newbie;
+        this.pet = pet;
+        this.flag = new int[]{445, 417, flag ? 0 : 1};
 
-        for (int i = 0; i < n; i++) {
-            tesseracts[i] = new Tesseract();
-            tesseracts[i].setDatapath("input/tesseract/tessdata");
-            tesseracts[i].setLanguage("vie");
+        this.tesseract = new Tesseract();
+        this.tesseract.setDatapath("input/tesseract/tessdata");
+        this.tesseract.setLanguage("vie");
 
-            numberTesseracts[i] = new Tesseract();
-            numberTesseracts[i].setDatapath("input/tesseract/tessdata");
-            numberTesseracts[i].setLanguage("eng");
-            numberTesseracts[i].setTessVariable("tessedit_char_whitelist", "0123456789");
-
-            locks[i] = new Object();
-        }
-        terminateFlag = false;
+        this.lock = new Object();
+        this.terminateFlag = false;
+        this.startButton = startButton;
     }
 
     public void run() {
@@ -103,70 +58,64 @@ public class CoLongMulti extends Thread {
         GraphicsConfiguration gc = device.getDefaultConfiguration();
         scale = gc.getDefaultTransform().getScaleX();
 
-        int n = accounts.length;
-        Thread[] threads = new Thread[n];
-        for (int i = 0; i < n; i++) {
-            int k = i;
-            threads[i] = new Thread(() -> {
-                try {
-                    Set<String> visited = new HashSet<>();
-                    visited.add("truong thanh tieu.");
-                    visited.add("thanh dan.");
-                    for (int j = 0; j < questCount[k]; j++) {
-                        Queue<Dest> queue = new LinkedList<>();
-                        goToTTTC(handles[k], k);
-                        receiveQuest(queue, handles[k], k);
-                        traveling(queue, "truong thanh tieu.", visited, handles[k], k);
-                    }
-                } catch (Exception _) {
+        try {
+            Set<String> visited = new HashSet<>();
+            visited.add("truong thanh tieu.");
+            visited.add("thanh dan.");
+            for (int j = 0; j < questCount; j++) {
+                Queue<Dest> queue = new LinkedList<>();
+                goToTTTC();
+                receiveQuest(queue);
+                traveling(queue, "truong thanh tieu.", visited);
+            }
+        } catch (Exception _) {
 
-                }
-            });
-            threads[i].start();
+        } finally {
+            startButton.setEnabled(true);
         }
     }
 
-    private void goToTTTC(HWND handle, int k) throws InterruptedException, TesseractException {
+    private void goToTTTC() throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        click(569, 586, handle, k);
-        rightClick(flags[k], handle, k); // right click on flag
-        if (flags[k][2] == 0) {
-            waitForPrompt(224, 278, 180, 20, "toa do 1", handle, k);
-            click(348, 287, handle, k); // click on toa do
-            waitForPrompt(224, 278, 120, 20, "dua ta toi do", handle, k);
-            click(259, 286, handle, k); // click take me there
+        click(569, 586);
+        rightClick(flag); // right click on flag
+        if (flag[2] == 0) {
+            waitForPrompt(224, 278, 180, 20, "toa do 1");
+            click(348, 287); // click on toa do
+            waitForPrompt(224, 278, 120, 20, "dua ta toi do");
+            click(259, 286); // click take me there
         } else {
-            waitForPrompt(223, 351, 80, 20, "bach ly", handle, k);
-            click(321, 359, handle, k);
+            waitForPrompt(223, 351, 80, 20, "bach ly");
+            click(321, 359);
         }
-        while (!getLocation(handle, k).contains("truong thanh") && !terminateFlag) {
+        while (!getLocation().contains("truong thanh") && !terminateFlag) {
             Thread.sleep(200);
         }
     }
 
-    private void receiveQuest(Queue<Dest> queue, HWND handle, int k) throws InterruptedException, TesseractException {
+    private void receiveQuest(Queue<Dest> queue) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        click(569, 586, handle, k);
-        click(306, 145, handle, k); // click on NPC
-        waitForPrompt(223, 295, 120, 20, "van tieu", handle, k);
-        click(272, 305, handle, k); // click on van tieu ca nhan
-        waitForPrompt(223, 335, 180, 20, "cap 2", handle, k);
-        click(285, 344, handle, k); // click on cap 2
+        click(569, 586);
+        click(306, 145); // click on NPC
+        waitForPrompt(223, 295, 120, 20, "van tieu");
+        click(272, 305); // click on van tieu ca nhan
+        waitForPrompt(223, 335, 180, 20, "cap 2");
+        click(285, 344); // click on cap 2
         String destination = "";
         while (!destination.contains("[")) {
-            BufferedImage image = captureWindow(handles[k], 224, 257, 355, 40);
-            destination = tesseracts[k].doOCR(image);
+            BufferedImage image = captureWindow(224, 257, 355, 40);
+            destination = tesseract.doOCR(image);
             Thread.sleep(200);
         }
-        click(557, 266, handle, k);
-        parseDestination(queue, handle, k, destination);
+        click(557, 266);
+        parseDestination(queue, destination);
     }
 
-    private void parseDestination(Queue<Dest> queue, HWND handle, int k, String destination) throws TesseractException, InterruptedException {
+    private void parseDestination(Queue<Dest> queue, String destination) throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return;
         }
@@ -175,7 +124,7 @@ public class CoLongMulti extends Thread {
             case 'C':
                 char c3 = destination.charAt(index + 1);
                 if (c3 == 'u') { // cung to to
-                    getOut(handle, k);
+                    getOut();
                     queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
                     queue.offer(new Dest(2));
                     queue.offer(new Dest(3));
@@ -185,7 +134,7 @@ public class CoLongMulti extends Thread {
                 }
                 break;
             case 'L': // ly than dong
-                getOut(handle, k);
+                getOut();
                 queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
                 queue.offer(new Dest(2));
                 queue.offer(new Dest(3));
@@ -195,20 +144,20 @@ public class CoLongMulti extends Thread {
             case 'T':
                 char c2 = destination.charAt(index + 3);
                 if (c2 == 'm') { // tram lang
-                    getOut(handle, k);
+                    getOut();
                     queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
                     queue.offer(new Dest(2));
                     queue.offer(new Dest(74, 86, "vo danh"));
                 } else if (c2 == 't') { // tiet dai han
-                    getOut(handle, k);
+                    getOut();
                     queue.offer(new Dest(102, 497, 161, 49, "dieu phong"));
                     queue.offer(new Dest(51, 161, "hao han"));
                 } else if (c2 == 'n') { // trinh trung
-                    getOut(handle, k);
+                    getOut();
                     queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
                     queue.offer(new Dest(38, 79, "dien vo"));
                 } else { // thiet dien phan quan
-                    getOut(handle, k);
+                    getOut();
                     queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
                     queue.offer(new Dest(32, 57, "tang kiem"));
                 }
@@ -216,7 +165,7 @@ public class CoLongMulti extends Thread {
             case 'M': // ma khong quan
                 char c = destination.charAt(index + 3);
                 if (c == 'K') {
-                    getOut(handle, k);
+                    getOut();
                     queue.offer(new Dest(102, 497, 161, 49, "dieu phong"));
                     queue.offer(new Dest(18, 60, "quan dong"));
                 } else { // ma quan lao thai ba
@@ -224,12 +173,12 @@ public class CoLongMulti extends Thread {
                 }
                 break;
             case 'Đ': // duong thu thanh duong mon
-                getOut(handle, k);
+                getOut();
                 queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
                 queue.offer(new Dest(14, 71, "thoi luyen"));
                 break;
             case 'N': // ngoc linh lung quy vuc
-                getOut(handle, k);
+                getOut();
                 queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
                 queue.offer(new Dest(29, 70, "quy"));
                 break;
@@ -248,43 +197,43 @@ public class CoLongMulti extends Thread {
                 queue.offer(new Dest(20, 6, "kim ly"));
                 break;
         }
-        startMovement(queue, handle, k);
+        startMovement(queue);
     }
 
-    private void traveling(Queue<Dest> queue, String location, Set<String> visited, HWND handle, int k) throws InterruptedException, TesseractException {
+    private void traveling(Queue<Dest> queue, String location, Set<String> visited) throws InterruptedException, TesseractException {
         long stillCount = System.currentTimeMillis();
         while (!terminateFlag) {
-            if (isInBattle(handle)) {
-                progressMatch(handle, k);
+            if (isInBattle()) {
+                progressMatch();
                 stillCount = System.currentTimeMillis();
             } else if (location.contains(queue.peek().dest)) {
-                int[] coords = getCoordinates(handle, k);
+                int[] coords = getCoordinates();
                 int x = queue.peek().x;
                 int y = queue.peek().y;
-                if (coords[0] == x && coords[1] == y && !isInBattle(handle)) {
-                    if (arrived(queue, k, handle)) return;
+                if (coords[0] == x && coords[1] == y && !isInBattle()) {
+                    if (arrived(queue)) return;
                 }
                 stillCount = System.currentTimeMillis();
-            } else if (!getLocation(handle, k).equals(location)) {
-                location = getLocation(handle, k);
+            } else if (!getLocation().equals(location)) {
+                location = getLocation();
                 if (!visited.contains(location)) {
-                    closeTutorial(handle, k);
+                    closeTutorial();
                     visited.add(location);
                 }
-                int[] coords = getCoordinates(handle, k);
+                int[] coords = getCoordinates();
                 int x = queue.peek().x;
                 int y = queue.peek().y;
-                if (coords[0] == x && coords[1] == y && !isInBattle(handle)) {
-                    if (arrived(queue, k, handle)) return;
+                if (coords[0] == x && coords[1] == y && !isInBattle()) {
+                    if (arrived(queue)) return;
                 }
                 stillCount = System.currentTimeMillis();
             } else if (System.currentTimeMillis() - stillCount >= 50000) {
-                click(774, 115, handles[k], k);
-                closeTutorial(handles[k], k);
+                click(774, 115);
+                closeTutorial();
                 Thread.sleep(500);
-                click(481, 477, handles[k], k);
+                click(481, 477);
                 if (queue.peek().methodId == 0) {
-                    click(651, 268, handle, k);
+                    click(651, 268);
                     if (queue.peek().x == 22 && location.equals("thanh dan.")) {
                         queue.peek().x = 23;
                         queue.peek().y = 90;
@@ -296,35 +245,35 @@ public class CoLongMulti extends Thread {
         }
     }
 
-    private void startMovement(Queue<Dest> queue, HWND handle, int k) throws InterruptedException, TesseractException {
+    private void startMovement(Queue<Dest> queue) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
         Dest dest = queue.peek();
         switch (dest.methodId) {
             case -1:
-                click(766, 183, handle, k);
-                closeTutorial(handle, k);
-                click(dest.mapX, dest.mapY, handle, k);
-                click(766, 183, handle, k);
+                click(766, 183);
+                closeTutorial();
+                click(dest.mapX, dest.mapY);
+                click(766, 183);
                 break;
             case 0:
-                click(651, 268, handle, k);
+                click(651, 268);
                 break;
             case 2:
-                goToTVD(handle, k);
+                goToTVD();
                 dest.methodId = -1;
                 break;
             case 3:
-                goToHTT(handle, k);
+                goToHTT();
                 break;
             default:
                 break;
         }
     }
 
-    private void progressMatch(HWND handle, int k) throws InterruptedException, TesseractException {
-        synchronized (locks[k]) {
+    private void progressMatch() throws InterruptedException, TesseractException {
+        synchronized (lock) {
             long x = Math.round(267 * scale);
             long y = Math.round(540 * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
@@ -335,194 +284,196 @@ public class CoLongMulti extends Thread {
         // tro thu so ta: 175 143 175 / 206 146 207
         // ta so tan thu: 143 175 111
         // ta so tro thu: 111 207 215
-        while (!terminateFlag && (!isWhite(handle, 378, 90) || isWhite(handle, 405, 325))) {
+        while (!terminateFlag && (!isWhite(378, 90) || isWhite(405, 325))) {
             Thread.sleep(200);
         }
         int timer = 0;
         while (!terminateFlag) {
-            Color color = getPixelColor(handle, 231, 201);
+            Thread.sleep(200);
+            Color color = getPixelColor(231, 201);
             System.out.println(color);
-            int r = color.getRed();
-            if (timer >= 50 || r == 239) {
-                if (timer >= 50) System.out.println(timer);
-                characterAttack(handle, k);
-            } else if (r == 143) {
-                newbieAttack(handle, k);
-            } else if (r == 111) {
-                defense(handle, k);
-            } else if (r == 175 || r == 206) {
-                characterAttack(handle, k);
-            } else {
-                timer++;
-                Thread.sleep(200);
-                continue;
+            switch (color.getRed()) {
+                case 175:
+                case 206:
+                case 239:
+                    characterAttack();
+                    break;
+                case 143:
+                    newbieAttack();
+                    break;
+                case 111:
+                    defense();
+                    break;
+                default:
+                    timer++;
+                    continue;
             }
-            waitForDefensePrompt(handle, k);
-            petAttack(handle, k);
             break;
         }
+
+        waitForDefensePrompt();
+        petAttack();
+        while (!terminateFlag && (isWhite(378, 90) || isWhite(405, 325))) {
+            Thread.sleep(200);
+        }
         System.out.println();
-        Thread.sleep(4000);
+
         boolean finished = false;
-        // dung danh: 166 231 -> 48 83 79/111
-        while (isInBattle(handle) && !terminateFlag) {
-            if (finished) {
-                Thread.sleep(200);
-                continue;
-            }
-            if (isWhite(handle, 378, 90)) {
-                defense(handle, k);
-                waitForDefensePrompt(handle, k);
-                petDefense(handle, k);
+        while (isInBattle() && !terminateFlag) {
+            if (!finished && isWhite(378, 90)) {
+                defense();
+                waitForDefensePrompt();
+                petDefense();
                 finished = true;
             }
             Thread.sleep(200);
         }
     }
 
-    private boolean arrived(Queue<Dest> queue, int k, HWND handle) throws TesseractException, InterruptedException {
+    private boolean arrived(Queue<Dest> queue) throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return true;
         }
         if (queue.peek().methodId == 0) {
             while (!terminateFlag) {
-                if (isInBattle(handle)) {
+                if (isInBattle()) {
                     return false;
-                } else if (!waitForPrompt(224, 257, 150, 20, "[", handle, k)) {
-                    fixFinishQuest(queue.peek().x, queue.peek().y, handle, k);
-                } else if (finishQuest(handle, k)) {
+                } else if (!waitForPrompt(224, 257, 150, 20, "[")) {
+                    fixFinishQuest(queue.peek().x, queue.peek().y);
+                } else if (finishQuest()) {
                     break;
                 }
             }
             return true;
         } else {
             queue.poll();
-            startMovement(queue, handle, k);
+            startMovement(queue);
             return false;
         }
     }
 
-    private void fixFinishQuest(int x, int y, HWND handle, int k) throws InterruptedException, TesseractException {
+    private void fixFinishQuest(int x, int y) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
         switch (x) {
             case 10: // hac sinh y 10 73
-                click(399, 212, handle, k);
+                click(399, 212);
                 break;
             case 14: // duong thu thanh 14 71
-                click(505, 182, handle, k);
+                click(505, 182);
                 break;
             case 18: // ma khong quan 18 60
-                click(287, 189, handle, k);
+                click(287, 189);
                 break;
             case 20: // kim phung hoang 20 65
-                click(239, 230, handle, k);
+                click(239, 230);
                 break;
             case 22: // ma quan lao thai ba 22 110
-                click(537, 401, handle, k);
+                click(537, 401);
                 break;
             case 26: // so luu huong 26 57
-                click(145, 276, handle, k);
+                click(145, 276);
                 break;
             case 29: // ngoc linh lung 29 70, han thuan 29 84
                 if (y == 70) {
-                    click(400, 131, handle, k);
+                    click(400, 131);
                 } else {
-                    click(286, 146, handle, k);
+                    click(286, 146);
                 }
                 break;
             case 30: // ly than dong 30 199
-                click(683, 308, handle, k);
+                click(683, 308);
                 break;
             case 32: // thiet dien phan qua 32 57
-                click(539, 177, handle, k);
+                click(539, 177);
                 break;
             case 37: // chuong chan seu 37 145
-                click(549, 228, handle, k);
+                click(549, 228);
                 break;
             case 38: // trinh trung 38 79
-                click(399, 125, handle, k);
+                click(399, 125);
                 break;
             case 51: // tiet dai han 51 161
-                click(128, 284, handle, k);
+                click(128, 284);
                 break;
             case 57: // cung to to 57 48
-                click(682, 260, handle, k);
+                click(682, 260);
                 break;
             case 74: // tram lang 74 86
-                click(250, 201, handle, k);
+                click(250, 201);
         }
     }
 
-    private boolean finishQuest(HWND handle, int k) throws TesseractException, InterruptedException {
+    private boolean finishQuest() throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return true;
         }
         int[] arr = new int[]{296, 314, 278, 332};
         for (int i = 0; i < 4 && !terminateFlag; i++) {
-            BufferedImage image = captureWindow(handle, 223, arr[i], 70, 20);
-            if (removeDiacritics(tesseracts[k].doOCR(image)).contains("van tieu")) {
-                click(251, arr[i] + 10, handle, k);
-                waitForPrompt(224, 257, 150, 20, "[", handle, k);
-                click(557, 266, handle, k); // click on final text box;
+            BufferedImage image = captureWindow(223, arr[i], 70, 20);
+            if (removeDiacritics(tesseract.doOCR(image)).contains("van tieu")) {
+                click(251, arr[i] + 10);
+                waitForPrompt(224, 257, 150, 20, "[");
+                click(557, 266); // click on final text box;
                 return true;
             }
         }
         return false;
     }
 
-    private void getOut(HWND handle, int k) throws InterruptedException, TesseractException {
+    private void getOut() throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        click(730, 443, handle, k);
+        click(730, 443);
         Thread.sleep(2000);
-        click(651, 432, handle, k);
-        while (!getLocation(handle, k).contains("kinh thanh") && !terminateFlag) {
+        click(651, 432);
+        while (!getLocation().contains("kinh thanh") && !terminateFlag) {
             Thread.sleep(200);
         }
     }
 
-    private void goToTVD(HWND handle, int k) throws InterruptedException, TesseractException {
+    private void goToTVD() throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
         Thread.sleep(1000);
-        click(131, 229, handle, k);
-        waitForPrompt(224, 257, 100, 20, "binh khi", handle, k);
-        click(323, 456, handle, k);
-        while (!getLocation(handle, k).contains("danh nhan") && !terminateFlag) {
+        click(131, 229);
+        waitForPrompt(224, 257, 100, 20, "binh khi");
+        click(323, 456);
+        while (!getLocation().contains("danh nhan") && !terminateFlag) {
             Thread.sleep(200);
         }
-        click(787, 480, handle, k);
+        click(787, 480);
     }
 
-    private void goToHTT(HWND handle, int k) throws InterruptedException, TesseractException {
+    private void goToHTT() throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        click(557, 287, handle, k);
-        waitForPrompt(223, 278, 150, 20, "hoang thach", handle, k);
-        click(259, 286, handle, k);
+        Thread.sleep(1000);
+        click(557, 287);
+        waitForPrompt(223, 278, 150, 20, "hoang thach");
+        click(259, 286);
     }
 
-    private void closeTutorial(HWND handle, int k) throws TesseractException, InterruptedException {
+    private void closeTutorial() throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return;
         }
-        BufferedImage image = captureWindow(handle, 224, 257, 150, 20);
-        String str = removeDiacritics(tesseracts[k].doOCR(image));
+        BufferedImage image = captureWindow(224, 257, 150, 20);
+        String str = removeDiacritics(tesseract.doOCR(image));
         if (str.contains("tieu mai") || str.contains("thanh nhi")) {
-            click(557, 266, handle, k);
+            click(557, 266);
         }
     }
 
-    private boolean waitForPrompt(int x, int y, int width, int height, String target, HWND handle, int k) throws TesseractException, InterruptedException {
+    private boolean waitForPrompt(int x, int y, int width, int height, String target) throws TesseractException, InterruptedException {
         int timer = 0;
-        while (timer++ < 50 && !terminateFlag && !isInBattle(handle)) {
-            BufferedImage image = captureWindow(handle, x, y, width, height);
-            String str = removeDiacritics(tesseracts[k].doOCR(image));
+        while (timer++ < 50 && !terminateFlag && !isInBattle()) {
+            BufferedImage image = captureWindow(x, y, width, height);
+            String str = removeDiacritics(tesseract.doOCR(image));
             if (str.contains(target)) {
                 return true;
             }
@@ -530,11 +481,12 @@ public class CoLongMulti extends Thread {
         }
         return false;
     }
-    private void waitForDefensePrompt(HWND handle, int k) throws TesseractException, InterruptedException {
+
+    private void waitForDefensePrompt() throws TesseractException, InterruptedException {
         int timer = 0;
         while (timer++ < 50 && !terminateFlag) {
-            BufferedImage image = captureWindow(handle, 737, 239, 50, 20);
-            String str = removeDiacritics(tesseracts[k].doOCR(image));
+            BufferedImage image = captureWindow(737, 239, 50, 20);
+            String str = removeDiacritics(tesseract.doOCR(image));
             if (str.contains("thu")) {
                 return;
             }
@@ -542,20 +494,20 @@ public class CoLongMulti extends Thread {
         }
     }
 
-    private boolean isInBattle(HWND handle) {
-        Color color = getPixelColor(handle, 778, 38);
+    private boolean isInBattle() {
+        Color color = getPixelColor(778, 38);
         // 0 36 90 - in battle, 90 46 2 - in map
         return color.getRed() < color.getGreen() && color.getGreen() < color.getBlue();
     }
 
-    private String getLocation(HWND handle, int k) throws TesseractException {
-        BufferedImage image = captureWindow(handle, 656, 32, 112, 15);
-        return removeDiacritics(tesseracts[k].doOCR(image));
+    private String getLocation() throws TesseractException {
+        BufferedImage image = captureWindow(656, 32, 112, 15);
+        return removeDiacritics(tesseract.doOCR(image));
     }
 
-    private int[] getCoordinates(HWND handle, int k) throws TesseractException {
-        BufferedImage image = captureWindow(handle, 653, 51, 125, 18);
-        char[] coords = removeDiacritics(tesseracts[k].doOCR(image)).toCharArray();
+    private int[] getCoordinates() throws TesseractException {
+        BufferedImage image = captureWindow(653, 51, 125, 18);
+        char[] coords = removeDiacritics(tesseract.doOCR(image)).toCharArray();
         int[] res = new int[2];
         int i = 0;
         for (; i < coords.length && coords[i] != 'y'; i++) {
@@ -571,41 +523,41 @@ public class CoLongMulti extends Thread {
         return res;
     }
 
-    private void characterAttack(HWND handle, int k) throws InterruptedException {
-        if (skills[k] != 0) {
-            click(375 + skills[k] * 35, 548, handle, k);
+    private void characterAttack() throws InterruptedException {
+        if (skill != 0) {
+            click(375 + skill * 35, 548);
         }
         Thread.sleep(200);
-        click(222, 167, handle, k);
+        click(222, 167);
     }
 
-    private void newbieAttack(HWND handle, int k) throws InterruptedException {
-        click(375 + newbies[k] * 35, 548, handle, k);
+    private void newbieAttack() throws InterruptedException {
+        click(375 + newbie * 35, 548);
         Thread.sleep(200);
-        click(222, 167, handle, k);
+        click(222, 167);
     }
 
-    private void petAttack(HWND handle, int k) throws InterruptedException {
-        if (pets[k] != 0) {
-            click(759, 209, handle, k);
-            click(254 + pets[k] * 37, 290, handle, k);
+    private void petAttack() throws InterruptedException {
+        if (pet != 0) {
+            click(759, 209);
+            click(254 + pet * 37, 290);
         }
         Thread.sleep(200);
-        click(222, 167, handle, k);
+        click(222, 167);
     }
 
-    private void defense(HWND handle, int k) throws InterruptedException {
-        click(760, 292, handle, k);
+    private void defense() throws InterruptedException {
+        click(760, 292);
     }
 
-    private void petDefense(HWND handle, int k) throws InterruptedException {
-        click(760, 246, handle, k);
+    private void petDefense() throws InterruptedException {
+        click(760, 246);
     }
 
-    public static BufferedImage captureWindow(HWND hwnd, int x, int y, int width, int height) {
+    public BufferedImage captureWindow(int x, int y, int width, int height) {
         x -= 3;
         y -= 26;
-        HDC windowDC = User32.INSTANCE.GetDC(hwnd); // Get the window's device context (DC)
+        HDC windowDC = User32.INSTANCE.GetDC(handle); // Get the window's device context (DC)
         HDC memDC = GDI32.INSTANCE.CreateCompatibleDC(windowDC); // Create a compatible DC in memory
         HBITMAP memBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(windowDC, width, height);
         GDI32.INSTANCE.SelectObject(memDC, memBitmap); // Select the bitmap into the memory DC
@@ -630,7 +582,7 @@ public class CoLongMulti extends Thread {
         // Release resources
         GDI32.INSTANCE.DeleteObject(memBitmap);
         GDI32.INSTANCE.DeleteDC(memDC);
-        User32.INSTANCE.ReleaseDC(hwnd, windowDC);
+        User32.INSTANCE.ReleaseDC(handle, windowDC);
 
         // Convert the pixel data into a BufferedImage
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -647,22 +599,22 @@ public class CoLongMulti extends Thread {
         return image;
     }
 
-    public Color getPixelColor(HWND hwnd, int x, int y) {
+    public Color getPixelColor(int x, int y) {
         x -= 3;
         y -= 26;
         // Get the device context of the window
-        HDC hdc = User32.INSTANCE.GetDC(hwnd);
+        HDC hdc = User32.INSTANCE.GetDC(handle);
 
         // Get the color of the specified pixel
         int pixelColor = MyGDI32.INSTANCE.GetPixel(hdc, x, y);
-        User32.INSTANCE.ReleaseDC(hwnd, hdc); // Release the DC
+        User32.INSTANCE.ReleaseDC(handle, hdc); // Release the DC
 
         // Return the color as a Color object
         return new Color(pixelColor & 0xFF, (pixelColor >> 8) & 0xFF, (pixelColor >> 16) & 0xFF);
     }
 
-    private boolean isWhite(HWND handle, int x, int y) {
-        Color color = getPixelColor(handle, x, y);
+    private boolean isWhite(int x, int y) {
+        Color color = getPixelColor(x, y);
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
         return r == 254 && g == 254 && b == 254;
     }
@@ -683,36 +635,12 @@ public class CoLongMulti extends Thread {
         return res.toString();
     }
 
-    private Map<Integer, HWND> getAllWindows(User32 user32) {
-        Map<Integer, HWND> res = new HashMap<>();
-        user32.EnumWindows((hwnd, arg) -> {
-            char[] text = new char[100];
-            user32.GetWindowText(hwnd, text, 100);
-            String title = new String(text).trim();
-            if (title.startsWith("http://colongonline.com")) {
-                int UID = 0;
-                int index = 23;
-                while (title.charAt(index) != ':') {
-                    index++;
-                }
-                index += 2;
-                while (Character.isDigit(title.charAt(index))) {
-                    UID = UID * 10 + Character.getNumericValue(title.charAt(index));
-                    index++;
-                }
-                res.put(UID, hwnd);
-            }
-            return true;
-        }, null);
-        return res;
-    }
-
     public void setTerminateFlag() {
         terminateFlag = true;
     }
 
-    public void click(int a, int b, HWND handle, int k) throws InterruptedException {
-        synchronized (locks[k]) {
+    public void click(int a, int b) throws InterruptedException {
+        synchronized (lock) {
             long x = Math.round((a - 3) * scale);
             long y = Math.round((b - 26) * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
@@ -725,8 +653,8 @@ public class CoLongMulti extends Thread {
 
     }
 
-    public void rightClick(int a, int b, HWND handle, int k) throws InterruptedException {
-        synchronized (locks[k]) {
+    public void rightClick(int a, int b) throws InterruptedException {
+        synchronized (lock) {
             long x = Math.round((a - 3) * scale);
             long y = Math.round((b - 26) * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
@@ -738,15 +666,15 @@ public class CoLongMulti extends Thread {
         }
     }
 
-    private void click(int[] arr, HWND handle, int k) throws InterruptedException {
-        click(arr[0], arr[1], handle, k);
+    private void click(int[] arr) throws InterruptedException {
+        click(arr[0], arr[1]);
     }
 
-    private void rightClick(int[] arr, HWND handle, int k) throws InterruptedException {
-        rightClick(arr[0], arr[1], handle, k);
+    private void rightClick(int[] arr) throws InterruptedException {
+        rightClick(arr[0], arr[1]);
     }
 
-    private int[] getMouseLocation(HWND handle) throws InterruptedException {
+    private int[] getMouseLocation() throws InterruptedException {
         Thread.sleep(2000);
         RECT r = new RECT();
         User32.INSTANCE.GetWindowRect(handle, r);

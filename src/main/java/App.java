@@ -1,3 +1,6 @@
+import com.sun.jna.platform.win32.User32;
+import com.sun.jna.platform.win32.WinDef;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -8,25 +11,31 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.util.*;
 import java.util.List;
+import com.sun.jna.platform.win32.WinDef.HWND;
+
 
 public class App {
+    private static Map<String, Integer> keyMap = getKeyMap();
     private static Set<Integer> functionKeys;
+    private static List<JTextField> uidFields = new ArrayList<>();
+    private static List<JTextField> questCountFields = new ArrayList<>();
+    private static List<JButton> skillButtons = new ArrayList<>();
+    private static List<JButton> newbieButtons = new ArrayList<>();
+    private static List<JButton> petButtons = new ArrayList<>();
+    private static List<JCheckBox> flagButtons = new ArrayList<>();
+    private static List<JButton> startButtons = new ArrayList<>();
+    private static List<JButton> stopButtons = new ArrayList<>();
+    private static Map<Integer, HWND> handleMap = getAllWindows();
+
     public static void main(String[] args) {
         JFrame frame = new JFrame("Auto Vận Tiêu");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 205);
+        frame.setSize(600, 285);
 
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(5, 5, 5, 5));
+        panel.setLayout(new GridLayout(7, 8, 5, 5));
         panel.setBorder(new EmptyBorder(5, 5, 5, 5));
         frame.add(panel);
-
-        List<JTextField> uidFields = new ArrayList<>();
-        List<JTextField> questCountFields = new ArrayList<>();
-        List<JButton> skillButtons = new ArrayList<>();
-        List<JButton> newbieButtons = new ArrayList<>();
-        List<JButton> petButtons = new ArrayList<>();
-        List<JCheckBox> flagButtons = new ArrayList<>();
 
         functionKeys = Set.of(KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4,
                 KeyEvent.VK_F5, KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8, KeyEvent.VK_F9, KeyEvent.VK_F10);
@@ -37,10 +46,12 @@ public class App {
         panel.add(new JLabel("Tân thủ"));
         panel.add(new JLabel("Trợ thủ"));
         panel.add(new JLabel("Siêu ĐTK"));
+        panel.add(new JPanel());
+        panel.add(new JPanel());
 
         // add components for all 5 accounts
         for (int i = 0; i < 5; i++) {
-            addAccount(panel, uidFields, questCountFields, skillButtons, newbieButtons, petButtons, flagButtons);
+            addAccount(panel);
         }
 
         Image plusIcon = new ImageIcon("input/tesseract/plus-icon.png").getImage();
@@ -51,75 +62,36 @@ public class App {
         plusButton.setContentAreaFilled(false);
         plusButton.setHorizontalAlignment(SwingConstants.LEFT);
         panel.add(plusButton);
-
-        JPanel empty1 = new JPanel();
-        JPanel empty2 = new JPanel();
-        JPanel empty3 = new JPanel();
-        panel.add(empty1);
-        panel.add(empty2);
-        panel.add(empty3);
-
-        JButton stopButton = new JButton("Dừng");
-        JButton startButton = new JButton("Bắt đầu");
-        startButton.addActionListener(e -> {
-            List<Integer> UIDs = new ArrayList<>();
-            List<Integer> questCounts = new ArrayList<>();
-            List<Integer> skills = new ArrayList<>();
-            List<Integer> newbies = new ArrayList<>();
-            List<Integer> pets = new ArrayList<>();
-            List<Boolean> flags = new ArrayList<>();
-            parseAccounts(UIDs, questCounts, skills, newbies, pets, flags,
-                    uidFields, questCountFields, skillButtons, newbieButtons, petButtons, flagButtons);
-            if (UIDs.isEmpty()) {
-                return;
-            }
-            try {
-                startButton.setEnabled(false);
-                CoLongMulti colong = new CoLongMulti(UIDs, questCounts, skills, newbies, pets, flags);
-                ActionListener actionListener = new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        colong.setTerminateFlag();
-                        stopButton.removeActionListener(this);
-
-                    }
-                };
-                stopButton.addActionListener(actionListener);
-                colong.run();
-                startButton.setEnabled(true);
-            } catch (Exception _) {
-
-            }
-        });
+        JPanel[] empties = new JPanel[7];
+        for (int i = 0; i < 7; i++) {
+            empties[i] = new JPanel();
+            panel.add(empties[i]);
+        }
 
         plusButton.addActionListener(e -> {
             if (uidFields.size() >= 10) {
                 return;
             }
-            panel.remove(startButton);
-            panel.remove(stopButton);
-            panel.remove(empty3);
-            panel.remove(empty2);
-            panel.remove(empty1);
+            for (int i = 6; i >= 0; i--) {
+                panel.remove(empties[i]);
+            }
             panel.remove(plusButton);
-            addAccount(panel, uidFields, questCountFields, skillButtons, newbieButtons, petButtons, flagButtons);
+
+            addAccount(panel);
             frame.setSize(600,35 * (uidFields.size() + 2) + 5 * (uidFields.size() + 1) + 10);
-            panel.setLayout(new GridLayout(uidFields.size() + 2, 5, 5, 5));
+            panel.setLayout(new GridLayout(uidFields.size() + 2, 8, 5, 5));
+
             panel.add(plusButton);
-            panel.add(empty1);
-            panel.add(empty2);
-            panel.add(empty3);
-            panel.add(stopButton);
-            panel.add(startButton);
+            for (int i = 0; i < 7; i++) {
+                panel.add(empties[i]);
+            }
         });
 
-        panel.add(stopButton);
-        panel.add(startButton);
         frame.setVisible(true);
     }
-    private static void addAccount(JPanel panel, List<JTextField> uidFields, List<JTextField> questCountFields, List<JButton> skillButtons,
-                                   List<JButton> newbieButtons, List<JButton> petButtons, List<JCheckBox> flagButtons) {
+    private static void addAccount(JPanel panel) {
         int i = uidFields.size();
+
         uidFields.add(new JTextField());
         questCountFields.add(new JTextField("10"));
 
@@ -148,48 +120,92 @@ public class App {
         skillButtons.add(buttons[0]);
         newbieButtons.add(buttons[1]);
         petButtons.add(buttons[2]);
-        JCheckBox c = new JCheckBox("", true);
-        c.setHorizontalAlignment(SwingConstants.CENTER);
-        flagButtons.add(c);
+
+        JCheckBox checkbox = new JCheckBox("", true);
+        checkbox.setHorizontalAlignment(SwingConstants.CENTER);
+        flagButtons.add(checkbox);
 
         panel.add(skillButtons.get(i));
         panel.add(newbieButtons.get(i));
         panel.add(petButtons.get(i));
         panel.add(flagButtons.get(i));
-    }
-    private static void parseAccounts(List<Integer> UIDs, List<Integer> questCounts, List<Integer> skills,
-                                      List<Integer> newbies, List<Integer> pets, List<Boolean> flags,
-                                      List<JTextField> uidFields, List<JTextField> questCountFields, List<JButton> skillButtons,
-                                      List<JButton> newbieButtons, List<JButton> petButtons, List<JCheckBox> flagButtons) {
-        Map<String, Integer> keyMap = getKeyMap();
-        for (int i = 0; i < uidFields.size(); i++) {
+
+        stopButtons.add(new JButton("Dừng"));
+        startButtons.add(new JButton("Bắt đầu"));
+
+        panel.add(stopButtons.get(i));
+        panel.add(startButtons.get(i));
+
+        startButtons.get(i).addActionListener(e -> {
             String a = uidFields.get(i).getText();
             String b = questCountFields.get(i).getText();
             if (a.isBlank() || b.isBlank()) {
-                continue;
+                return;
             }
+
             try {
                 int UID = Integer.parseInt(a);
                 int questCount = Integer.parseInt(b);
+
                 if (UID <= 1) {
                     uidFields.get(i).setText("");
                     questCountFields.get(i).setText("10");
-                    continue;
+                    return;
                 } else if (questCount <= 0 || questCount >= 10) {
                     questCount = 10;
                     questCountFields.get(i).setText("10");
                 }
-                UIDs.add(UID);
-                questCounts.add(questCount);
-                skills.add(keyMap.get(skillButtons.get(i).getText()));
-                newbies.add(keyMap.get(newbieButtons.get(i).getText()));
-                pets.add(keyMap.get(petButtons.get(i).getText()));
-                flags.add(flagButtons.get(i).isSelected());
-            } catch (NumberFormatException _) {
+
+                int skill = keyMap.get(skillButtons.get(i).getText());
+                int newbie = keyMap.get(newbieButtons.get(i).getText());
+                int pet = keyMap.get(petButtons.get(i).getText());
+                boolean flag = flagButtons.get(i).isSelected();
+
+                startButtons.get(i).setEnabled(false);
+                CoLongMulti colong = new CoLongMulti(UID, questCount, skill, newbie, pet, flag, startButtons.get(i), handleMap);
+
+                ActionListener actionListener = new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        colong.setTerminateFlag();
+                        stopButtons.get(i).removeActionListener(this);
+                    }
+                };
+                stopButtons.get(i).addActionListener(actionListener);
+
+                colong.start();
+            } catch (NumberFormatException e1) {
                 uidFields.get(i).setText("");
                 questCountFields.get(i).setText("10");
+            } catch (Exception _) {
+
             }
-        }
+        });
+    }
+
+    private static Map<Integer, HWND> getAllWindows() {
+        User32 user32 = User32.INSTANCE;
+        Map<Integer, HWND> res = new HashMap<>();
+        user32.EnumWindows((hwnd, arg) -> {
+            char[] text = new char[100];
+            user32.GetWindowText(hwnd, text, 100);
+            String title = new String(text).trim();
+            if (title.startsWith("http://colongonline.com")) {
+                int UID = 0;
+                int index = 23;
+                while (index < title.length() && title.charAt(index) != ':') {
+                    index++;
+                }
+                index += 2;
+                while (index < title.length() && Character.isDigit(title.charAt(index))) {
+                    UID = UID * 10 + Character.getNumericValue(title.charAt(index));
+                    index++;
+                }
+                res.put(UID, hwnd);
+            }
+            return true;
+        }, null);
+        return res;
     }
 
     private static Map<String, Integer> getKeyMap() {
