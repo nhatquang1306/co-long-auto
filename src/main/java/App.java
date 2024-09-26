@@ -15,17 +15,17 @@ import com.sun.jna.platform.win32.WinDef.HWND;
 
 
 public class App {
-    private static Map<String, Integer> keyMap = getKeyMap();
+    private static Map<String, Integer> keyMap;
     private static Set<Integer> functionKeys;
-    private static List<JTextField> uidFields = new ArrayList<>();
-    private static List<JTextField> questCountFields = new ArrayList<>();
-    private static List<JButton> skillButtons = new ArrayList<>();
-    private static List<JButton> newbieButtons = new ArrayList<>();
-    private static List<JButton> petButtons = new ArrayList<>();
-    private static List<JCheckBox> flagButtons = new ArrayList<>();
-    private static List<JButton> startButtons = new ArrayList<>();
-    private static List<JButton> stopButtons = new ArrayList<>();
-    private static Map<Integer, HWND> handleMap = getAllWindows();
+    private static List<JTextField> uidFields;
+    private static List<JTextField> questCountFields;
+    private static List<JButton> skillButtons;
+    private static List<JButton> newbieButtons;
+    private static List<JButton> petButtons;
+    private static List<JCheckBox> flagButtons;
+    private static List<JButton> stopButtons;
+    private static List<JButton> startButtons;
+    private static Map<Integer, HWND> handleMap;
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Auto Vận Tiêu");
@@ -37,8 +37,7 @@ public class App {
         panel.setBorder(new EmptyBorder(5, 5, 5, 5));
         frame.add(panel);
 
-        functionKeys = Set.of(KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4,
-                KeyEvent.VK_F5, KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8, KeyEvent.VK_F9, KeyEvent.VK_F10);
+        initialize();
 
         panel.add(new JLabel("UID"));
         panel.add(new JLabel("Số Q"));
@@ -62,17 +61,25 @@ public class App {
         plusButton.setContentAreaFilled(false);
         plusButton.setHorizontalAlignment(SwingConstants.LEFT);
         panel.add(plusButton);
-        JPanel[] empties = new JPanel[7];
-        for (int i = 0; i < 7; i++) {
+
+        JPanel[] empties = new JPanel[6];
+        for (int i = 0; i < 6; i++) {
             empties[i] = new JPanel();
             panel.add(empties[i]);
         }
+
+        JButton resetButton = new JButton("Reset");
+        resetButton.addActionListener(e -> {
+            handleMap = getAllWindows();
+        });
+        panel.add(resetButton);
 
         plusButton.addActionListener(e -> {
             if (uidFields.size() >= 10) {
                 return;
             }
-            for (int i = 6; i >= 0; i--) {
+            panel.remove(resetButton);
+            for (int i = 5; i >= 0; i--) {
                 panel.remove(empties[i]);
             }
             panel.remove(plusButton);
@@ -82,9 +89,10 @@ public class App {
             panel.setLayout(new GridLayout(uidFields.size() + 2, 8, 5, 5));
 
             panel.add(plusButton);
-            for (int i = 0; i < 7; i++) {
+            for (int i = 0; i < 6; i++) {
                 panel.add(empties[i]);
             }
+            panel.add(resetButton);
         });
 
         frame.setVisible(true);
@@ -130,8 +138,8 @@ public class App {
         panel.add(petButtons.get(i));
         panel.add(flagButtons.get(i));
 
-        stopButtons.add(new JButton("Dừng"));
-        startButtons.add(new JButton("Bắt đầu"));
+        stopButtons.add(new JButton("Stop"));
+        startButtons.add(new JButton("Start"));
 
         panel.add(stopButtons.get(i));
         panel.add(startButtons.get(i));
@@ -181,6 +189,21 @@ public class App {
 
             }
         });
+    }
+
+    private static void initialize() {
+        keyMap = getKeyMap();
+        functionKeys = Set.of(KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4,
+                KeyEvent.VK_F5, KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8, KeyEvent.VK_F9, KeyEvent.VK_F10);
+        uidFields = new ArrayList<>();
+        questCountFields = new ArrayList<>();
+        skillButtons = new ArrayList<>();
+        newbieButtons = new ArrayList<>();
+        petButtons = new ArrayList<>();
+        flagButtons = new ArrayList<>();
+        stopButtons = new ArrayList<>();
+        startButtons = new ArrayList<>();
+        handleMap = getAllWindows();
     }
 
     private static Map<Integer, HWND> getAllWindows() {
