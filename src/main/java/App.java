@@ -14,7 +14,7 @@ public class App {
     public static void main(String[] args) {
         JFrame frame = new JFrame("Auto Vận Tiêu");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(520, 205);
+        frame.setSize(600, 205);
 
         JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(5, 5, 5, 5));
@@ -39,7 +39,7 @@ public class App {
         panel.add(new JLabel("Siêu ĐTK"));
 
         // add components for all 5 accounts
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 5; i++) {
             addAccount(panel, uidFields, questCountFields, skillButtons, newbieButtons, petButtons, flagButtons);
         }
 
@@ -74,6 +74,7 @@ public class App {
                 return;
             }
             try {
+                startButton.setEnabled(false);
                 CoLongMulti colong = new CoLongMulti(UIDs, questCounts, skills, newbies, pets, flags);
                 ActionListener actionListener = new ActionListener() {
                     @Override
@@ -85,6 +86,7 @@ public class App {
                 };
                 stopButton.addActionListener(actionListener);
                 colong.run();
+                startButton.setEnabled(true);
             } catch (Exception _) {
 
             }
@@ -101,7 +103,7 @@ public class App {
             panel.remove(empty1);
             panel.remove(plusButton);
             addAccount(panel, uidFields, questCountFields, skillButtons, newbieButtons, petButtons, flagButtons);
-            frame.setSize(520,35 * (uidFields.size() + 2) + 5 * (uidFields.size() + 1) + 10);
+            frame.setSize(600,35 * (uidFields.size() + 2) + 5 * (uidFields.size() + 1) + 10);
             panel.setLayout(new GridLayout(uidFields.size() + 2, 5, 5, 5));
             panel.add(plusButton);
             panel.add(empty1);

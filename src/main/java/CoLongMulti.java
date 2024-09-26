@@ -32,7 +32,7 @@ import javax.imageio.ImageIO;
 import static com.sun.jna.platform.win32.WinUser.*;
 
 
-public class CoLongMulti {
+public class CoLongMulti extends Thread {
     private final Tesseract[] tesseracts;
     private final Tesseract[] numberTesseracts;
     private final int[] accounts;
@@ -98,7 +98,7 @@ public class CoLongMulti {
         terminateFlag = false;
     }
 
-    public void run() throws InterruptedException, IOException, TesseractException {
+    public void run() {
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         GraphicsConfiguration gc = device.getDefaultConfiguration();
         scale = gc.getDefaultTransform().getScaleX();
@@ -124,7 +124,6 @@ public class CoLongMulti {
             });
             threads[i].start();
         }
-
     }
 
     private void goToTTTC(HWND handle, int k) throws InterruptedException, TesseractException {
@@ -304,18 +303,12 @@ public class CoLongMulti {
         Dest dest = queue.peek();
         switch (dest.methodId) {
             case -1:
-                if (dest.mapX == 688) {
-                    System.out.println(accounts[k] + " dang di ktdg");
-                }
                 click(766, 183, handle, k);
                 closeTutorial(handle, k);
                 click(dest.mapX, dest.mapY, handle, k);
                 click(766, 183, handle, k);
                 break;
             case 0:
-                if ((dest.x == 29 && dest.y == 70) || dest.x == 14 || dest.x == 32 || dest.x == 38) {
-                    System.out.println(accounts[k] + " o ktdg");
-                }
                 click(651, 268, handle, k);
                 break;
             case 2:
@@ -345,10 +338,13 @@ public class CoLongMulti {
         while (!terminateFlag && (!isWhite(handle, 378, 90) || isWhite(handle, 405, 325))) {
             Thread.sleep(200);
         }
+        int timer = 0;
         while (!terminateFlag) {
             Color color = getPixelColor(handle, 231, 201);
-            int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-            if (r == 239) {
+            System.out.println(color);
+            int r = color.getRed();
+            if (timer >= 50 || r == 239) {
+                if (timer >= 50) System.out.println(timer);
                 characterAttack(handle, k);
             } else if (r == 143) {
                 newbieAttack(handle, k);
@@ -357,13 +353,15 @@ public class CoLongMulti {
             } else if (r == 175 || r == 206) {
                 characterAttack(handle, k);
             } else {
+                timer++;
                 Thread.sleep(200);
                 continue;
             }
-            waitForPrompt(737, 239, 50, 20, "thu", handle, k);
+            waitForDefensePrompt(handle, k);
             petAttack(handle, k);
             break;
         }
+        System.out.println();
         Thread.sleep(4000);
         boolean finished = false;
         // dung danh: 166 231 -> 48 83 79/111
@@ -374,7 +372,7 @@ public class CoLongMulti {
             }
             if (isWhite(handle, 378, 90)) {
                 defense(handle, k);
-                waitForPrompt(737, 239, 50, 20, "thu", handle, k);
+                waitForDefensePrompt(handle, k);
                 petDefense(handle, k);
                 finished = true;
             }
@@ -388,7 +386,9 @@ public class CoLongMulti {
         }
         if (queue.peek().methodId == 0) {
             while (!terminateFlag) {
-                if (!waitForPrompt(224, 257, 150, 20, "[", handle, k)) {
+                if (isInBattle(handle)) {
+                    return false;
+                } else if (!waitForPrompt(224, 257, 150, 20, "[", handle, k)) {
                     fixFinishQuest(queue.peek().x, queue.peek().y, handle, k);
                 } else if (finishQuest(handle, k)) {
                     break;
@@ -520,16 +520,26 @@ public class CoLongMulti {
 
     private boolean waitForPrompt(int x, int y, int width, int height, String target, HWND handle, int k) throws TesseractException, InterruptedException {
         int timer = 0;
-        while (timer++ < 50 && !terminateFlag) {
+        while (timer++ < 50 && !terminateFlag && !isInBattle(handle)) {
             BufferedImage image = captureWindow(handle, x, y, width, height);
             String str = removeDiacritics(tesseracts[k].doOCR(image));
             if (str.contains(target)) {
-                Thread.sleep(200);
                 return true;
             }
             Thread.sleep(200);
         }
         return false;
+    }
+    private void waitForDefensePrompt(HWND handle, int k) throws TesseractException, InterruptedException {
+        int timer = 0;
+        while (timer++ < 50 && !terminateFlag) {
+            BufferedImage image = captureWindow(handle, 737, 239, 50, 20);
+            String str = removeDiacritics(tesseracts[k].doOCR(image));
+            if (str.contains("thu")) {
+                return;
+            }
+            Thread.sleep(200);
+        }
     }
 
     private boolean isInBattle(HWND handle) {

@@ -40,15 +40,15 @@ public class test {
         GraphicsConfiguration gc = device.getDefaultConfiguration();
         scale = gc.getDefaultTransform().getScaleX();
 
-        int UID = 146;
-        String username = "Ám";
         HWND handle = User32.INSTANCE.FindWindow(null, "http://colongonline.com (Minh Nguyệt)");
-//        HWND handle = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
-//        System.out.println(getPixelColor(handle, 378, 90));
-//        System.out.println(Arrays.toString(getMouseLocation(handle)));
         BufferedImage image = captureWindow(handle, 145, 225, 140, 90);
         ImageIO.write(image, "png", new File("screenshot.png"));
     }
+    // 3f - c
+    // 56y - a
+    // 7k - b
+    // 4tg - a
+    // 734 - d
 
     public static Color getPixelColor(HWND hwnd, int x, int y) {
         x -= 3;
@@ -75,14 +75,30 @@ public class test {
         return new int[]{m.x - rect.x, m.y - rect.y};
     }
 
-    private static void sendKeyPress() {
-        int UID = 411;
-        String username = "Nezumi";
+    private static void sendKeyPress() throws InterruptedException {
+        Thread.sleep(1000);
+        int UID = 3454;
+        String username = "Chửi";
+        Thread.sleep(2000);
         HWND hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
 
         // Post the F1 keydown message to the target thread
-        User32.INSTANCE.PostMessage(hwnd, WM_KEYDOWN, new WinDef.WPARAM(KeyEvent.VK_M), new WinDef.LPARAM(0));
+//
+//        WinDef.HWND foregroundWindow = User32.INSTANCE.GetForegroundWindow();
+//        int currentThreadId = User32.INSTANCE.GetWindowThreadProcessId(foregroundWindow, null);
+//        int targetThreadId = User32.INSTANCE.GetWindowThreadProcessId(hwnd, null);
+//
+//        // Attach the current thread to the target window's thread
+//        User32.INSTANCE.AttachThreadInput(new WinDef.DWORD(currentThreadId), new WinDef.DWORD(targetThreadId), true);
+        User32.INSTANCE.SetForegroundWindow(hwnd);
 
+        User32.INSTANCE.PostMessage(hwnd, WM_KEYDOWN, new WinDef.WPARAM(KeyEvent.VK_F12), new WinDef.LPARAM(0));
+
+        // Send F1 key up
+
+
+        // Detach threads
+//        User32.INSTANCE.AttachThreadInput(new WinDef.DWORD(currentThreadId), new WinDef.DWORD(targetThreadId), false);
     }
 
     public static BufferedImage captureWindow(HWND hwnd, int x, int y, int width, int height) {
@@ -139,5 +155,6 @@ public class test {
         int WM_MOUSEMOVE = 0x0200;
         int WM_KEYDOWN = 0x0100;
         int WM_KEYUP = 0x0101;
+        int WM_SYSKEYDOWN = 0x0104;
     }
 }
