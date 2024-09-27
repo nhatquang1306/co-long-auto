@@ -1,7 +1,7 @@
 public class Dest {
     public int methodId;
     public int mapX, mapY;
-    public int x, y;
+    public int[][] coords;
     public String dest;
 
     public Dest(int methodId) {
@@ -9,42 +9,26 @@ public class Dest {
         if (methodId == 2) { // at ti vo dao
             this.mapX = 618;
             this.mapY = 503;
-            this.x = 58;
-            this.y = 132;
+            this.coords = new int[][] {{58, 132}};
             this.dest = "tivo";
         } else if (methodId == 3) { // in hoang thach tran
-            this.x = 34;
-            this.y = 188;
+            this.coords = new int[][] {{34, 188}};
             this.dest = "hoang thach";
         }
     }
-    public Dest(int x, int y, String dest) {
+    public Dest(int[][] coords, String dest) {
         this.methodId = 0;
         this.mapX = -1;
         this.mapY = -1;
-        this.x = x;
-        this.y = y;
+        this.coords = coords;
         this.dest = dest;
     }
-    public Dest(int mapX, int mapY, int x, int y, String dest) {
+    public Dest(int mapX, int mapY, int[][] coords, String dest) {
         this.methodId = -1;
         this.mapX = mapX;
         this.mapY = mapY;
-        this.x = x;
-        this.y = y;
+        this.coords = coords;
         this.dest = dest;
 
-    }
-
-    @Override
-    public String toString() {
-        return "Dest{" +
-                "methodId=" + methodId +
-                ", mapX=" + mapX +
-                ", mapY=" + mapY +
-                ", x=" + x +
-                ", y=" + y +
-                ", dest='" + dest + '\'' +
-                '}';
     }
 }

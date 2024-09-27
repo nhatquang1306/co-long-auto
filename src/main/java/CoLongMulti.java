@@ -125,76 +125,76 @@ public class CoLongMulti extends Thread {
                 char c3 = destination.charAt(index + 1);
                 if (c3 == 'u') { // cung to to
                     getOut();
-                    queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
+                    queue.offer(new Dest(472, 227, new int[][] {{173, 164}}, "kinh thanh"));
                     queue.offer(new Dest(2));
                     queue.offer(new Dest(3));
-                    queue.offer(new Dest(57, 48, "hoang thach"));
+                    queue.offer(new Dest(new int[][] {{57, 48}}, "hoang thach"));
                 } else { // chuong chan seu
-                    queue.offer(new Dest(37, 145, "long mon"));
+                    queue.offer(new Dest(new int[][] {{37, 145}}, "long mon"));
                 }
                 break;
             case 'L': // ly than dong
                 getOut();
-                queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
+                queue.offer(new Dest(472, 227, new int[][] {{173, 164}}, "kinh thanh"));
                 queue.offer(new Dest(2));
                 queue.offer(new Dest(3));
-                queue.offer(new Dest(623, 264, 10, 307, "luc thuy"));
-                queue.offer(new Dest(30, 199, "ngan cau"));
+                queue.offer(new Dest(623, 264, new int[][] {{10, 307}}, "luc thuy"));
+                queue.offer(new Dest(new int[][] {{30, 199}}, "ngan cau"));
                 break;
             case 'T':
                 char c2 = destination.charAt(index + 3);
                 if (c2 == 'm') { // tram lang
                     getOut();
-                    queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
+                    queue.offer(new Dest(472, 227, new int[][] {{173, 164}}, "kinh thanh"));
                     queue.offer(new Dest(2));
-                    queue.offer(new Dest(74, 86, "vo danh"));
+                    queue.offer(new Dest(new int[][] {{74, 86}}, "vo danh"));
                 } else if (c2 == 't') { // tiet dai han
                     getOut();
-                    queue.offer(new Dest(102, 497, 161, 49, "dieu phong"));
-                    queue.offer(new Dest(51, 161, "hao han"));
+                    queue.offer(new Dest(102, 497, new int[][] {{161, 49}}, "dieu phong"));
+                    queue.offer(new Dest(new int[][] {{51, 161}}, "hao han"));
                 } else if (c2 == 'n') { // trinh trung
                     getOut();
-                    queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
-                    queue.offer(new Dest(38, 79, "dien vo"));
+                    queue.offer(new Dest(688, 199, new int[][] {{18, 254}}, "kinh thanh dong"));
+                    queue.offer(new Dest(new int[][] {{38, 79}}, "dien vo"));
                 } else { // thiet dien phan quan
                     getOut();
-                    queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
-                    queue.offer(new Dest(32, 57, "tang kiem"));
+                    queue.offer(new Dest(688, 199, new int[][] {{18, 254}}, "kinh thanh dong"));
+                    queue.offer(new Dest(new int[][] {{32, 57}, {33, 58}}, "tang kiem"));
                 }
                 break;
             case 'M': // ma khong quan
                 char c = destination.charAt(index + 3);
                 if (c == 'K') {
                     getOut();
-                    queue.offer(new Dest(102, 497, 161, 49, "dieu phong"));
-                    queue.offer(new Dest(18, 60, "quan dong"));
+                    queue.offer(new Dest(102, 497, new int[][] {{161, 49}}, "dieu phong"));
+                    queue.offer(new Dest(new int[][] {{18, 60}}, "quan dong"));
                 } else { // ma quan lao thai ba
-                    queue.offer(new Dest(22, 110, "ky dao"));
+                    queue.offer(new Dest(new int[][] {{22, 110}, {23, 90}}, "ky dao"));
                 }
                 break;
             case 'Đ': // duong thu thanh duong mon
                 getOut();
-                queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
-                queue.offer(new Dest(14, 71, "thoi luyen"));
+                queue.offer(new Dest(688, 199, new int[][] {{18, 254}}, "kinh thanh dong"));
+                queue.offer(new Dest(new int[][] {{14, 71}}, "thoi luyen"));
                 break;
             case 'N': // ngoc linh lung quy vuc
                 getOut();
-                queue.offer(new Dest(688, 199, 18, 254, "kinh thanh dong"));
-                queue.offer(new Dest(29, 70, "quy"));
+                queue.offer(new Dest(688, 199, new int[][] {{18, 254}}, "kinh thanh dong"));
+                queue.offer(new Dest(new int[][] {{29, 70}}, "quy"));
                 break;
             case 'S': // so luu huong
-                queue.offer(new Dest(26, 57, "luu huong"));
+                queue.offer(new Dest(new int[][] {{26, 57}}, "luu huong"));
                 break;
             case 'H': // han thuan + hac sinh y
                 char c4 = destination.charAt(index + 2);
                 if (c4 == 'n') {
-                    queue.offer(new Dest(29, 84, "binh khi"));
+                    queue.offer(new Dest(new int[][] {{29, 84}}, "binh khi"));
                 } else {
-                    queue.offer(new Dest(10, 73, "thai binh"));
+                    queue.offer(new Dest(new int[][] {{10, 73}}, "thai binh"));
                 }
                 break;
             case 'K': // kim phung hoang
-                queue.offer(new Dest(20, 6, "kim ly"));
+                queue.offer(new Dest(new int[][] {{20, 6}}, "kim ly"));
                 break;
         }
         startMovement(queue);
@@ -207,10 +207,7 @@ public class CoLongMulti extends Thread {
                 progressMatch();
                 stillCount = System.currentTimeMillis();
             } else if (location.contains(queue.peek().dest)) {
-                int[] coords = getCoordinates();
-                int x = queue.peek().x;
-                int y = queue.peek().y;
-                if (coords[0] == x && coords[1] == y && !isInBattle()) {
+                if (isAtFinalLocation(queue.peek().coords) && !isInBattle()) {
                     if (arrived(queue)) return;
                 }
                 stillCount = System.currentTimeMillis();
@@ -220,10 +217,7 @@ public class CoLongMulti extends Thread {
                     closeTutorial();
                     visited.add(location);
                 }
-                int[] coords = getCoordinates();
-                int x = queue.peek().x;
-                int y = queue.peek().y;
-                if (coords[0] == x && coords[1] == y && !isInBattle()) {
+                if (isAtFinalLocation(queue.peek().coords) && !isInBattle()) {
                     if (arrived(queue)) return;
                 }
                 stillCount = System.currentTimeMillis();
@@ -234,10 +228,6 @@ public class CoLongMulti extends Thread {
                 click(481, 477);
                 if (queue.peek().methodId == 0) {
                     click(651, 268);
-                    if (queue.peek().x == 22 && location.equals("thanh dan.")) {
-                        queue.peek().x = 23;
-                        queue.peek().y = 90;
-                    }
                 }
                 stillCount = System.currentTimeMillis();
             }
@@ -332,6 +322,15 @@ public class CoLongMulti extends Thread {
             Thread.sleep(200);
         }
     }
+    private boolean isAtFinalLocation(int[][] target) throws TesseractException {
+        int[] cur = getCoordinates();
+        for (int[] arr : target) {
+            if (arr[0] == cur[0] && arr[1] == cur[1]) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private boolean arrived(Queue<Dest> queue) throws TesseractException, InterruptedException {
         if (terminateFlag) {
@@ -343,6 +342,7 @@ public class CoLongMulti extends Thread {
                     return false;
                 }
                 Thread.sleep(1000);
+                fixFinishQuest();
             }
             return true;
         } else {
@@ -352,10 +352,13 @@ public class CoLongMulti extends Thread {
         }
     }
 
-    private void fixFinishQuest(int x, int y) throws InterruptedException, TesseractException {
+    private void fixFinishQuest() throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
+        int[] cur = getCoordinates();
+        int x = cur[0];
+        int y = cur[1];
         switch (x) {
             case 10: // hac sinh y 10 73
                 click(399, 212);
@@ -370,6 +373,7 @@ public class CoLongMulti extends Thread {
                 click(239, 230);
                 break;
             case 22: // ma quan lao thai ba 22 110
+            case 23: // ma quan lao thai ba 23 90
                 click(537, 401);
                 break;
             case 26: // so luu huong 26 57
@@ -386,6 +390,7 @@ public class CoLongMulti extends Thread {
                 click(683, 308);
                 break;
             case 32: // thiet dien phan qua 32 57
+            case 33: // thiet dien phan qua 33 58
                 click(539, 177);
                 break;
             case 37: // chuong chan seu 37 145
