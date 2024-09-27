@@ -45,7 +45,7 @@ public class CoLongMulti extends Thread {
         this.flag = new int[]{445, 417, flag ? 0 : 1};
 
         this.tesseract = new Tesseract();
-        this.tesseract.setDatapath("input/tesseract/tessdata");
+        this.tesseract.setDatapath("app/tesseract/tessdata");
         this.tesseract.setLanguage("vie");
 
         this.lock = new Object();
@@ -292,27 +292,30 @@ public class CoLongMulti extends Thread {
             Thread.sleep(200);
             Color color = getPixelColor(231, 201);
             System.out.println(color);
-            switch (color.getRed()) {
-                case 175:
-                case 206:
-                case 239:
-                    characterAttack();
-                    break;
-                case 143:
-                    newbieAttack();
-                    break;
-                case 111:
-                    defense();
-                    break;
-                default:
-                    timer++;
-                    continue;
+            int r = color.getRed();
+            if (timer >= 50 || r == 239) {
+                characterAttack();
+                waitForDefensePrompt();
+                petAttack();
+            } else if (r == 143) {
+                newbieAttack();
+                waitForDefensePrompt();
+                petDefense();
+            } else if (r == 111) {
+                defense();
+                waitForDefensePrompt();
+                petAttack();
+            } else if (r == 175 || r == 206) {
+                characterAttack();
+                waitForDefensePrompt();
+                petDefense();
+            } else {
+                timer++;
+                continue;
             }
             break;
         }
 
-        waitForDefensePrompt();
-        petAttack();
         while (!terminateFlag && (isWhite(378, 90) || isWhite(405, 325))) {
             Thread.sleep(200);
         }
@@ -335,14 +338,11 @@ public class CoLongMulti extends Thread {
             return true;
         }
         if (queue.peek().methodId == 0) {
-            while (!terminateFlag) {
+            while (!terminateFlag && !finishQuest()) {
                 if (isInBattle()) {
                     return false;
-                } else if (!waitForPrompt(224, 257, 150, 20, "[")) {
-                    fixFinishQuest(queue.peek().x, queue.peek().y);
-                } else if (finishQuest()) {
-                    break;
                 }
+                Thread.sleep(1000);
             }
             return true;
         } else {
