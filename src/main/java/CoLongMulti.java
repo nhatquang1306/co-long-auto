@@ -45,7 +45,7 @@ public class CoLongMulti extends Thread {
         this.flag = new int[]{445, 417, flag ? 0 : 1};
 
         this.tesseract = new Tesseract();
-        this.tesseract.setDatapath("app/tesseract/tessdata");
+        this.tesseract.setDatapath("input/tesseract/tessdata");
         this.tesseract.setLanguage("vie");
 
         this.lock = new Object();
@@ -106,7 +106,7 @@ public class CoLongMulti extends Thread {
         waitForPrompt(223, 335, 180, 20, "cap 2");
         click(285, 344); // click on cap 2
         String destination = "";
-        while (!destination.contains("[")) {
+        while (!terminateFlag && !destination.contains("[")) {
             BufferedImage image = captureWindow(224, 257, 355, 40);
             destination = tesseract.doOCR(image);
             Thread.sleep(200);
