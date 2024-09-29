@@ -18,7 +18,7 @@ import static com.sun.jna.platform.win32.WinUser.*;
 public class CoLongMulti extends Thread {
     private final Tesseract tesseract;
     private final int questCount;
-    private final int skill;
+    private int skill;
     private final int newbie;
     private final int pet;
     private final HWND handle;
@@ -27,6 +27,12 @@ public class CoLongMulti extends Thread {
     private final Object lock;
     private final int[] flag;
     private final JButton startButton;
+    private static final Color everyColor1 = new Color(239, 239, 15);
+    private static final Color everyColor2 = new Color(239, 207, 15);
+    private static final Color characterColor1 = new Color(175, 143, 175);
+    private static final Color characterColor2 = new Color(206, 146, 207);
+    private static final Color newbieColor = new Color(143, 175, 111);
+    private static final Color petColor = new Color(111, 207, 215);
 
     // note
     // attack enemy next turn
@@ -65,7 +71,7 @@ public class CoLongMulti extends Thread {
             for (int j = 0; j < questCount; j++) {
                 Queue<Dest> queue = new LinkedList<>();
                 goToTTTC();
-                receiveQuest(queue);
+                receiveQuest(queue, visited);
                 traveling(queue, "truong thanh tieu.", visited);
             }
         } catch (Exception _) {
@@ -95,7 +101,7 @@ public class CoLongMulti extends Thread {
         }
     }
 
-    private void receiveQuest(Queue<Dest> queue) throws InterruptedException, TesseractException {
+    private void receiveQuest(Queue<Dest> queue, Set<String> visited) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
@@ -105,17 +111,13 @@ public class CoLongMulti extends Thread {
         click(272, 305); // click on van tieu ca nhan
         waitForPrompt(223, 335, 180, 20, "cap 2");
         click(285, 344); // click on cap 2
-        String destination = "";
-        while (!terminateFlag && !destination.contains("[")) {
-            BufferedImage image = captureWindow(224, 257, 355, 40);
-            destination = tesseract.doOCR(image);
-            Thread.sleep(200);
-        }
+        waitForDialogueBox(50);
+        BufferedImage image = captureWindow(224, 257, 355, 40);
         click(557, 266);
-        parseDestination(queue, destination);
+        parseDestination(queue, tesseract.doOCR(image), visited);
     }
 
-    private void parseDestination(Queue<Dest> queue, String destination) throws TesseractException, InterruptedException {
+    private void parseDestination(Queue<Dest> queue, String destination, Set<String> visited) throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return;
         }
@@ -197,7 +199,7 @@ public class CoLongMulti extends Thread {
                 queue.offer(new Dest(new int[][] {{20, 6}}, "kim ly"));
                 break;
         }
-        startMovement(queue);
+        startMovement(queue, visited);
     }
 
     private void traveling(Queue<Dest> queue, String location, Set<String> visited) throws InterruptedException, TesseractException {
@@ -208,7 +210,7 @@ public class CoLongMulti extends Thread {
                 stillCount = System.currentTimeMillis();
             } else if (location.contains(queue.peek().dest)) {
                 if (isAtFinalLocation(queue.peek().coords) && !isInBattle()) {
-                    if (arrived(queue)) return;
+                    if (arrived(queue, visited)) return;
                 }
                 stillCount = System.currentTimeMillis();
             } else if (!getLocation().equals(location)) {
@@ -218,24 +220,18 @@ public class CoLongMulti extends Thread {
                     visited.add(location);
                 }
                 if (isAtFinalLocation(queue.peek().coords) && !isInBattle()) {
-                    if (arrived(queue)) return;
+                    if (arrived(queue, visited)) return;
                 }
                 stillCount = System.currentTimeMillis();
             } else if (System.currentTimeMillis() - stillCount >= 50000) {
-                click(774, 115);
-                closeTutorial();
-                Thread.sleep(500);
-                click(481, 477);
-                if (queue.peek().methodId == 0) {
-                    click(651, 268);
-                }
+                location = handleIdling(location, visited, queue);
                 stillCount = System.currentTimeMillis();
             }
             Thread.sleep(200);
         }
     }
 
-    private void startMovement(Queue<Dest> queue) throws InterruptedException, TesseractException {
+    private void startMovement(Queue<Dest> queue, Set<String> visited) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
@@ -243,7 +239,10 @@ public class CoLongMulti extends Thread {
         switch (dest.methodId) {
             case -1:
                 click(766, 183);
-                closeTutorial();
+                if (!visited.contains("map")) {
+                    closeTutorial();
+                    visited.add("map");
+                }
                 click(dest.mapX, dest.mapY);
                 click(766, 183);
                 break;
@@ -262,64 +261,97 @@ public class CoLongMulti extends Thread {
         }
     }
 
-    private void progressMatch() throws InterruptedException, TesseractException {
-        synchronized (lock) {
-            long x = Math.round(267 * scale);
-            long y = Math.round(540 * scale);
-            LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
-            User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
-            Thread.sleep(200);
+    private String handleIdling(String location, Set<String> visited, Queue<Dest> queue) throws InterruptedException, TesseractException {
+        click(774, 115);
+        Thread.sleep(1000);
+        if (!visited.contains("channel")) {
+            closeTutorial();
+            visited.add("channel");
         }
+        if (!getLocation().equals(location)) {
+            location = getLocation();
+            if (!visited.contains(location)) {
+                closeTutorial();
+                visited.add(location);
+            }
+            click(481, 477);
+            if (queue.peek().methodId == 0) {
+                startMovement(queue, visited);
+            }
+        } else if (queue.peek().methodId <= 0) {
+            click(481, 477);
+            startMovement(queue, visited);
+        }
+        return location;
+    }
+
+    private void progressMatch() throws InterruptedException, TesseractException {
         // gi cung so: 239 239 15 / 239 207 15
         // tro thu so ta: 175 143 175 / 206 146 207
         // ta so tan thu: 143 175 111
         // ta so tro thu: 111 207 215
-        while (!terminateFlag && (!isWhite(378, 90) || isWhite(405, 325))) {
-            Thread.sleep(200);
-        }
-        int timer = 0;
-        while (!terminateFlag) {
-            Thread.sleep(200);
+        int turn = 0;
+        while (!terminateFlag && isInBattle()) {
+            // wait until timer shows up
+            while (!terminateFlag && (!isWhite(378, 90) || isWhite(405, 325))) {
+                if (!isInBattle()) {
+                    return;
+                }
+                Thread.sleep(200);
+            }
+            if (turn == 1 || turn == 2) {
+                waitForDialogueBox(7);
+                click(557, 266);
+            } else {
+                // move mouse out the way
+                synchronized (lock) {
+                    long x = Math.round(267 * scale);
+                    long y = Math.round(540 * scale);
+                    LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
+                    User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
+                    Thread.sleep(200);
+                }
+            }
             Color color = getPixelColor(231, 201);
-            System.out.println(color);
-            int r = color.getRed();
-            if (timer >= 50 || r == 239) {
+            int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
+            if (color.equals(everyColor1) || color.equals(everyColor2)) {
                 characterAttack();
                 waitForDefensePrompt();
                 petAttack();
-            } else if (r == 143) {
+            } else if (color.equals(newbieColor)) {
                 newbieAttack();
                 waitForDefensePrompt();
                 petDefense();
-            } else if (r == 111) {
+            } else if (color.equals(petColor)) {
                 defense();
                 waitForDefensePrompt();
-                petAttack();
-            } else if (r == 175 || r == 206) {
-                characterAttack();
+                if (turn == 0) {
+                    petAttack();
+                } else {
+                    click(222, 167);
+                }
+            } else if (color.equals(characterColor1) || color.equals(characterColor2)) {
+                if (turn == 0) {
+                    characterAttack();
+                } else {
+                    click(222, 167);
+                }
                 waitForDefensePrompt();
                 petDefense();
+            } else if (r >= 154 && r <= 178 && g >= 191 && g <= 228 && b >= 85 && b <= 121) {
+                defense();
+                waitForDefensePrompt();
+                click(222, 167);
             } else {
-                timer++;
-                continue;
-            }
-            break;
-        }
-
-        while (!terminateFlag && (isWhite(378, 90) || isWhite(405, 325))) {
-            Thread.sleep(200);
-        }
-        System.out.println();
-
-        boolean finished = false;
-        while (isInBattle() && !terminateFlag) {
-            if (!finished && isWhite(378, 90)) {
                 defense();
                 waitForDefensePrompt();
                 petDefense();
-                finished = true;
             }
-            Thread.sleep(200);
+            // wait until turn is over
+            while (!terminateFlag && (isWhite(378, 90) || isWhite(405, 325))) {
+                Thread.sleep(200);
+            }
+            turn++;
         }
     }
     private boolean isAtFinalLocation(int[][] target) throws TesseractException {
@@ -332,7 +364,7 @@ public class CoLongMulti extends Thread {
         return false;
     }
 
-    private boolean arrived(Queue<Dest> queue) throws TesseractException, InterruptedException {
+    private boolean arrived(Queue<Dest> queue, Set<String> visited) throws TesseractException, InterruptedException {
         if (terminateFlag) {
             return true;
         }
@@ -347,7 +379,7 @@ public class CoLongMulti extends Thread {
             return true;
         } else {
             queue.poll();
-            startMovement(queue);
+            startMovement(queue, visited);
             return false;
         }
     }
@@ -367,7 +399,7 @@ public class CoLongMulti extends Thread {
                 click(505, 182);
                 break;
             case 18: // ma khong quan 18 60
-                click(287, 189);
+                click(286, 198);
                 break;
             case 20: // kim phung hoang 20 65
                 click(239, 230);
@@ -419,7 +451,7 @@ public class CoLongMulti extends Thread {
             BufferedImage image = captureWindow(223, arr[i], 70, 20);
             if (removeDiacritics(tesseract.doOCR(image)).contains("van tieu")) {
                 click(251, arr[i] + 10);
-                waitForPrompt(224, 257, 150, 20, "[");
+                waitForDialogueBox(50);
                 click(557, 266); // click on final text box;
                 return true;
             }
@@ -463,13 +495,11 @@ public class CoLongMulti extends Thread {
         click(259, 286);
     }
 
-    private void closeTutorial() throws TesseractException, InterruptedException {
+    private void closeTutorial() throws InterruptedException {
         if (terminateFlag) {
             return;
         }
-        BufferedImage image = captureWindow(224, 257, 150, 20);
-        String str = removeDiacritics(tesseract.doOCR(image));
-        if (str.contains("tieu mai") || str.contains("thanh nhi")) {
+        if (hasDialogueBox()) {
             click(557, 266);
         }
     }
@@ -622,6 +652,23 @@ public class CoLongMulti extends Thread {
         Color color = getPixelColor(x, y);
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
         return r == 254 && g == 254 && b == 254;
+    }
+
+    private boolean waitForDialogueBox(int limit) throws InterruptedException {
+        int timer = 0;
+        while (timer++ < limit && !terminateFlag) {
+            if (hasDialogueBox()) {
+                return true;
+            }
+            Thread.sleep(200);
+        }
+        return false;
+    }
+
+    private boolean hasDialogueBox() {
+        Color color = getPixelColor(216, 304);
+        int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
+        return r == 0 && g == 0 && b == 0;
     }
 
     public String removeDiacritics(String text) {
