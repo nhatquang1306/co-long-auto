@@ -224,7 +224,7 @@ public class CoLongMulti extends Thread {
                 }
                 stillCount = System.currentTimeMillis();
             } else if (System.currentTimeMillis() - stillCount >= 50000) {
-                location = handleIdling(location, visited, queue);
+                handleIdling(queue, visited, location);
                 stillCount = System.currentTimeMillis();
             }
             Thread.sleep(200);
@@ -260,29 +260,21 @@ public class CoLongMulti extends Thread {
                 break;
         }
     }
-
-    private String handleIdling(String location, Set<String> visited, Queue<Dest> queue) throws InterruptedException, TesseractException {
-        click(774, 115);
-        Thread.sleep(1000);
-        if (!visited.contains("channel")) {
-            closeTutorial();
-            visited.add("channel");
+    private void handleIdling(Queue<Dest> queue, Set<String> visited, String location) throws InterruptedException, TesseractException {
+        click(569, 586);
+        rightClick(flag); // right click on flag
+        if (flag[2] == 0) {
+            waitForPrompt(224, 278, 180, 20, "toa do 1");
+            click(348, 287); // click on toa do
+            waitForPrompt(224, 278, 120, 20, "dua ta toi do");
+            click(259, 286); // click take me there
+        } else {
+            waitForPrompt(223, 351, 80, 20, "bach ly");
+            click(321, 359);
         }
-        if (!getLocation().equals(location)) {
-            location = getLocation();
-            if (!visited.contains(location)) {
-                closeTutorial();
-                visited.add(location);
-            }
-            click(481, 477);
-            if (queue.peek().methodId == 0) {
-                startMovement(queue, visited);
-            }
-        } else if (queue.peek().methodId <= 0) {
-            click(481, 477);
+        if (getLocation().equals(location) || queue.peek().methodId == 0) {
             startMovement(queue, visited);
         }
-        return location;
     }
 
     private void progressMatch() throws InterruptedException, TesseractException {
@@ -369,6 +361,7 @@ public class CoLongMulti extends Thread {
             return true;
         }
         if (queue.peek().methodId == 0) {
+            Thread.sleep(1000);
             while (!terminateFlag && !finishQuest()) {
                 if (isInBattle()) {
                     return false;
@@ -496,9 +489,6 @@ public class CoLongMulti extends Thread {
     }
 
     private void closeTutorial() throws InterruptedException {
-        if (terminateFlag) {
-            return;
-        }
         if (hasDialogueBox()) {
             click(557, 266);
         }
@@ -697,7 +687,7 @@ public class CoLongMulti extends Thread {
             long y = Math.round((b - 26) * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
             User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
-            Thread.sleep(200);
+            Thread.sleep(250);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONDOWN, new WPARAM(WinUser.MK_LBUTTON), lParam);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
             Thread.sleep(500);
@@ -711,7 +701,7 @@ public class CoLongMulti extends Thread {
             long y = Math.round((b - 26) * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
             User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
-            Thread.sleep(200);
+            Thread.sleep(250);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONDOWN, new WPARAM(WinUser.MK_RBUTTON), lParam);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONUP, new WPARAM(0), lParam);
             Thread.sleep(500);
