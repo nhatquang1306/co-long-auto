@@ -272,7 +272,11 @@ public class CoLongMulti extends Thread {
             waitForPrompt(223, 351, 80, 20, "bach ly");
             click(321, 359);
         }
+        click(569, 586);
         if (getLocation().equals(location) || queue.peek().methodId == 0) {
+            if (hasDialogueBox()) {
+                click(557, 266);
+            }
             startMovement(queue, visited);
         }
     }
