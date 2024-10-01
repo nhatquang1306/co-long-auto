@@ -171,7 +171,6 @@ public class App {
 
                 startButtons.get(i).setEnabled(false);
                 CoLongMulti colong = new CoLongMulti(UID, questCount, skill, newbie, pet, flag, startButtons.get(i), handleMap);
-
                 ActionListener actionListener = new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
@@ -180,7 +179,6 @@ public class App {
                     }
                 };
                 stopButtons.get(i).addActionListener(actionListener);
-
                 colong.start();
             } catch (NumberFormatException e1) {
                 uidFields.get(i).setText("");

@@ -171,7 +171,7 @@ public class CoLongMulti extends Thread {
                     queue.offer(new Dest(102, 497, new int[][] {{161, 49}}, "dieu phong"));
                     queue.offer(new Dest(new int[][] {{18, 60}}, "quan dong"));
                 } else { // ma quan lao thai ba
-                    queue.offer(new Dest(new int[][] {{22, 110}, {23, 90}}, "ky dao"));
+                    queue.offer(new Dest(new int[][] {{22, 110}, {23, 90}, {26, 101}}, "ky dao"));
                 }
                 break;
             case 'Đ': // duong thu thanh duong mon
@@ -192,11 +192,11 @@ public class CoLongMulti extends Thread {
                 if (c4 == 'n') {
                     queue.offer(new Dest(new int[][] {{29, 84}}, "binh khi"));
                 } else {
-                    queue.offer(new Dest(new int[][] {{10, 73}}, "thai binh"));
+                    queue.offer(new Dest(new int[][] {{10, 73}, {12, 58}}, "thai binh"));
                 }
                 break;
             case 'K': // kim phung hoang
-                queue.offer(new Dest(new int[][] {{20, 6}}, "kim ly"));
+                queue.offer(new Dest(new int[][] {{20, 6}, {15, 57}}, "kim ly"));
                 break;
         }
         startMovement(queue, visited);
