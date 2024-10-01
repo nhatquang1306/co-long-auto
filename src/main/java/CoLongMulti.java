@@ -263,20 +263,18 @@ public class CoLongMulti extends Thread {
     private void handleIdling(Queue<Dest> queue, Set<String> visited, String location) throws InterruptedException, TesseractException {
         click(569, 586);
         rightClick(flag); // right click on flag
+        if (waitForDialogueBox(50)) {
+            click(557, 266);
+        }
         if (flag[2] == 0) {
-            waitForPrompt(224, 278, 180, 20, "toa do 1");
-            click(348, 287); // click on toa do
+            click(348, 287);
             waitForPrompt(224, 278, 120, 20, "dua ta toi do");
-            click(259, 286); // click take me there
+            click(259, 286);
         } else {
-            waitForPrompt(223, 351, 80, 20, "bach ly");
             click(321, 359);
         }
         click(569, 586);
         if (getLocation().equals(location) || queue.peek().methodId == 0) {
-            if (hasDialogueBox()) {
-                click(557, 266);
-            }
             startMovement(queue, visited);
         }
     }
