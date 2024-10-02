@@ -123,7 +123,6 @@ public class SwitchStatements {
     }
 
     public static int[] handleIdling(String location, int x) {
-        System.out.println(location);
         if (location.charAt(0) <= 'm') {
             return handleIdlingSmall(location, x);
         } else {

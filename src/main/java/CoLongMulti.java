@@ -33,6 +33,7 @@ public class CoLongMulti extends Thread {
     private static final Color characterColor2 = new Color(206, 146, 207);
     private static final Color newbieColor = new Color(143, 175, 111);
     private static final Color petColor = new Color(111, 207, 215);
+    private static final Color black = new Color(0, 0, 0);
 
     public CoLongMulti(int UID, int questCount, int skill, int newbie, int pet, boolean flag, JButton startButton, Map<Integer, HWND> handleMap) throws Exception {
         handle = handleMap.get(UID);
@@ -210,17 +211,18 @@ public class CoLongMulti extends Thread {
         if (terminateFlag) {
             return;
         }
-        click(766, 183);
-        if (!visited.contains("map")) {
-            closeTutorial();
-            visited.add("map");
-        }
         if (location.equals("thanh y lau-tang.")) {
             click(383, 350);
             Thread.sleep(1000);
             click(651, 268);
         } else {
+            click(766, 183);
+            if (!visited.contains("map")) {
+                closeTutorial();
+                visited.add("map");
+            }
             click(SwitchStatements.handleIdling(location, x));
+            click(749, 268);
         }
     }
 
@@ -548,9 +550,9 @@ public class CoLongMulti extends Thread {
     }
 
     private boolean hasDialogueBox() {
-        Color color = getPixelColor(216, 304);
-        int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-        return r == 0 && g == 0 && b == 0;
+        Color color1 = getPixelColor(216, 304);
+        Color color2 = getPixelColor(588, 317);
+        return color1.equals(black) && color2.equals(black);
     }
 
     public String removeDiacritics(String text) {
