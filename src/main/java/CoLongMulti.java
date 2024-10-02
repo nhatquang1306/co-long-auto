@@ -18,7 +18,7 @@ import static com.sun.jna.platform.win32.WinUser.*;
 public class CoLongMulti extends Thread {
     private final Tesseract tesseract;
     private final int questCount;
-    private int skill;
+    private final int skill;
     private final int newbie;
     private final int pet;
     private final HWND handle;
@@ -34,14 +34,10 @@ public class CoLongMulti extends Thread {
     private static final Color newbieColor = new Color(143, 175, 111);
     private static final Color petColor = new Color(111, 207, 215);
 
-    // note
-    // attack enemy next turn
-    // check for quest when first booting up
-
     public CoLongMulti(int UID, int questCount, int skill, int newbie, int pet, boolean flag, JButton startButton, Map<Integer, HWND> handleMap) throws Exception {
         handle = handleMap.get(UID);
         if (handle == null) {
-            throw new Exception("Không có UID " + UID + ".");
+            throw new Exception(STR."Không có UID \{UID}.");
         }
 
         this.questCount = questCount;
@@ -121,110 +117,59 @@ public class CoLongMulti extends Thread {
         if (terminateFlag) {
             return;
         }
-        int index = destination.indexOf("do") + 3;
-        switch (destination.charAt(index)) {
-            case 'C':
-                char c3 = destination.charAt(index + 1);
-                if (c3 == 'u') { // cung to to
-                    getOut();
-                    queue.offer(new Dest(472, 227, new int[][] {{173, 164}}, "kinh thanh"));
-                    queue.offer(new Dest(2));
-                    queue.offer(new Dest(3));
-                    queue.offer(new Dest(new int[][] {{57, 48}}, "hoang thach"));
-                } else { // chuong chan seu
-                    queue.offer(new Dest(new int[][] {{37, 145}}, "long mon"));
-                }
-                break;
-            case 'L': // ly than dong
-                getOut();
-                queue.offer(new Dest(472, 227, new int[][] {{173, 164}}, "kinh thanh"));
-                queue.offer(new Dest(2));
-                queue.offer(new Dest(3));
-                queue.offer(new Dest(623, 264, new int[][] {{10, 307}}, "luc thuy"));
-                queue.offer(new Dest(new int[][] {{30, 199}}, "ngan cau"));
-                break;
-            case 'T':
-                char c2 = destination.charAt(index + 3);
-                if (c2 == 'm') { // tram lang
-                    getOut();
-                    queue.offer(new Dest(472, 227, new int[][] {{173, 164}}, "kinh thanh"));
-                    queue.offer(new Dest(2));
-                    queue.offer(new Dest(new int[][] {{74, 86}}, "vo danh"));
-                } else if (c2 == 't') { // tiet dai han
-                    getOut();
-                    queue.offer(new Dest(102, 497, new int[][] {{161, 49}}, "dieu phong"));
-                    queue.offer(new Dest(new int[][] {{51, 161}}, "hao han"));
-                } else if (c2 == 'n') { // trinh trung
-                    getOut();
-                    queue.offer(new Dest(688, 199, new int[][] {{18, 254}}, "kinh thanh dong"));
-                    queue.offer(new Dest(new int[][] {{38, 79}}, "dien vo"));
-                } else { // thiet dien phan quan
-                    getOut();
-                    queue.offer(new Dest(688, 199, new int[][] {{18, 254}}, "kinh thanh dong"));
-                    queue.offer(new Dest(new int[][] {{32, 57}, {33, 58}}, "tang kiem"));
-                }
-                break;
-            case 'M': // ma khong quan
-                char c = destination.charAt(index + 3);
-                if (c == 'K') {
-                    getOut();
-                    queue.offer(new Dest(102, 497, new int[][] {{161, 49}}, "dieu phong"));
-                    queue.offer(new Dest(new int[][] {{18, 60}}, "quan dong"));
-                } else { // ma quan lao thai ba
-                    queue.offer(new Dest(new int[][] {{22, 110}, {23, 90}, {26, 101}}, "ky dao"));
-                }
-                break;
-            case 'Đ': // duong thu thanh duong mon
-                getOut();
-                queue.offer(new Dest(688, 199, new int[][] {{18, 254}}, "kinh thanh dong"));
-                queue.offer(new Dest(new int[][] {{14, 71}}, "thoi luyen"));
-                break;
-            case 'N': // ngoc linh lung quy vuc
-                getOut();
-                queue.offer(new Dest(688, 199, new int[][] {{18, 254}}, "kinh thanh dong"));
-                queue.offer(new Dest(new int[][] {{29, 70}}, "quy"));
-                break;
-            case 'S': // so luu huong
-                queue.offer(new Dest(new int[][] {{26, 57}}, "luu huong"));
-                break;
-            case 'H': // han thuan + hac sinh y
-                char c4 = destination.charAt(index + 2);
-                if (c4 == 'n') {
-                    queue.offer(new Dest(new int[][] {{29, 84}}, "binh khi"));
-                } else {
-                    queue.offer(new Dest(new int[][] {{10, 73}, {12, 58}}, "thai binh"));
-                }
-                break;
-            case 'K': // kim phung hoang
-                queue.offer(new Dest(new int[][] {{20, 6}, {15, 57}}, "kim ly"));
-                break;
+        if (SwitchStatements.parseDestination(destination, queue)) {
+            getOut(visited);
         }
         startMovement(queue, visited);
     }
 
     private void traveling(Queue<Dest> queue, String location, Set<String> visited) throws InterruptedException, TesseractException {
         long stillCount = System.currentTimeMillis();
+        long finalTime = -1;
         while (!terminateFlag) {
             if (isInBattle()) {
                 progressMatch();
-                stillCount = System.currentTimeMillis();
-            } else if (location.contains(queue.peek().dest)) {
-                if (isAtFinalLocation(queue.peek().coords) && !isInBattle()) {
-                    if (arrived(queue, visited)) return;
+                long time = System.currentTimeMillis();
+                if (finalTime > -1) {
+                    finalTime = time;
                 }
-                stillCount = System.currentTimeMillis();
-            } else if (!getLocation().equals(location)) {
-                location = getLocation();
+                stillCount = time;
+            } else if (location.contains(queue.peek().dest)) {
+                int[] cur = getCoordinates();
+                long time = System.currentTimeMillis();
+                boolean isInBattle = isInBattle();
+                if (cur[0] == queue.peek().x && cur[1] == queue.peek().y && !isInBattle) {
+                    if (arrived(queue, visited)) return;
+                } else if (queue.peek().methodId == 0 && !isInBattle) {
+                    if (finalTime == -1) {
+                        finalTime = time;
+                    } else if (finalTime == -2) {
+                        if (finishQuest()) return;
+                    } else if (time - finalTime >= 30000) {
+                        click(651, 268);
+                        finalTime = -2;
+                    }
+                }
+                stillCount = time;
+            } else if (!getLocation().trim().equals(location)) {
+                location = getLocation().trim();
                 if (!visited.contains(location)) {
                     closeTutorial();
                     visited.add(location);
                 }
-                if (isAtFinalLocation(queue.peek().coords) && !isInBattle()) {
+                int[] cur = getCoordinates();
+                if (cur[0] == queue.peek().x && cur[1] == queue.peek().y && !isInBattle()) {
                     if (arrived(queue, visited)) return;
                 }
                 stillCount = System.currentTimeMillis();
             } else if (System.currentTimeMillis() - stillCount >= 50000) {
-                handleIdling(queue, visited, location);
+                if (queue.peek().methodId == -1) {
+                    click(766, 183);
+                    click(queue.peek().mapX, queue.peek().mapY);
+                    click(766, 183);
+                } else if (queue.peek().methodId == 0) {
+                    handleIdling(visited, location, queue.peek().x);
+                }
                 stillCount = System.currentTimeMillis();
             }
             Thread.sleep(200);
@@ -260,22 +205,22 @@ public class CoLongMulti extends Thread {
                 break;
         }
     }
-    private void handleIdling(Queue<Dest> queue, Set<String> visited, String location) throws InterruptedException, TesseractException {
-        click(569, 586);
-        rightClick(flag); // right click on flag
-        if (waitForDialogueBox(50)) {
-            click(557, 266);
+
+    private void handleIdling(Set<String> visited, String location, int x) throws InterruptedException, TesseractException {
+        if (terminateFlag) {
+            return;
         }
-        if (flag[2] == 0) {
-            click(348, 287);
-            waitForPrompt(224, 278, 120, 20, "dua ta toi do");
-            click(259, 286);
+        click(766, 183);
+        if (!visited.contains("map")) {
+            closeTutorial();
+            visited.add("map");
+        }
+        if (location.equals("thanh y lau-tang.")) {
+            click(383, 350);
+            Thread.sleep(1000);
+            click(651, 268);
         } else {
-            click(321, 359);
-        }
-        click(569, 586);
-        if (getLocation().equals(location) || queue.peek().methodId == 0) {
-            startMovement(queue, visited);
+            click(SwitchStatements.handleIdling(location, x));
         }
     }
 
@@ -348,15 +293,6 @@ public class CoLongMulti extends Thread {
             turn++;
         }
     }
-    private boolean isAtFinalLocation(int[][] target) throws TesseractException {
-        int[] cur = getCoordinates();
-        for (int[] arr : target) {
-            if (arr[0] == cur[0] && arr[1] == cur[1]) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private boolean arrived(Queue<Dest> queue, Set<String> visited) throws TesseractException, InterruptedException {
         if (terminateFlag) {
@@ -384,57 +320,7 @@ public class CoLongMulti extends Thread {
             return;
         }
         int[] cur = getCoordinates();
-        int x = cur[0];
-        int y = cur[1];
-        switch (x) {
-            case 10: // hac sinh y 10 73
-                click(399, 212);
-                break;
-            case 14: // duong thu thanh 14 71
-                click(505, 182);
-                break;
-            case 18: // ma khong quan 18 60
-                click(286, 198);
-                break;
-            case 20: // kim phung hoang 20 65
-                click(239, 230);
-                break;
-            case 22: // ma quan lao thai ba 22 110
-            case 23: // ma quan lao thai ba 23 90
-                click(537, 401);
-                break;
-            case 26: // so luu huong 26 57
-                click(145, 276);
-                break;
-            case 29: // ngoc linh lung 29 70, han thuan 29 84
-                if (y == 70) {
-                    click(400, 131);
-                } else {
-                    click(286, 146);
-                }
-                break;
-            case 30: // ly than dong 30 199
-                click(683, 308);
-                break;
-            case 32: // thiet dien phan qua 32 57
-            case 33: // thiet dien phan qua 33 58
-                click(539, 177);
-                break;
-            case 37: // chuong chan seu 37 145
-                click(549, 228);
-                break;
-            case 38: // trinh trung 38 79
-                click(399, 125);
-                break;
-            case 51: // tiet dai han 51 161
-                click(128, 284);
-                break;
-            case 57: // cung to to 57 48
-                click(682, 260);
-                break;
-            case 74: // tram lang 74 86
-                click(250, 201);
-        }
+        click(SwitchStatements.fixFinishQuest(cur[0], cur[1]));
     }
 
     private boolean finishQuest() throws TesseractException, InterruptedException {
@@ -454,7 +340,7 @@ public class CoLongMulti extends Thread {
         return false;
     }
 
-    private void getOut() throws InterruptedException, TesseractException {
+    private void getOut(Set<String> visited) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
@@ -463,6 +349,10 @@ public class CoLongMulti extends Thread {
         click(651, 432);
         while (!getLocation().contains("kinh thanh") && !terminateFlag) {
             Thread.sleep(200);
+        }
+        if (!visited.contains("kinh thanh.")) {
+            closeTutorial();
+            visited.add("kinh thanh.");
         }
     }
 
@@ -692,9 +582,8 @@ public class CoLongMulti extends Thread {
             Thread.sleep(300);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONDOWN, new WPARAM(WinUser.MK_LBUTTON), lParam);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
-            Thread.sleep(500);
+            Thread.sleep(300);
         }
-
     }
 
     public void rightClick(int a, int b) throws InterruptedException {
@@ -706,7 +595,7 @@ public class CoLongMulti extends Thread {
             Thread.sleep(300);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONDOWN, new WPARAM(WinUser.MK_RBUTTON), lParam);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONUP, new WPARAM(0), lParam);
-            Thread.sleep(500);
+            Thread.sleep(300);
         }
     }
 
