@@ -165,7 +165,13 @@ public class SwitchStatements {
     private static int[] handleIdlingSmall(String location, int x) {
         switch (location) {
             case "kinh thanh.":
-                return new int[] {702, 495};
+                if (x == 29) {
+                    return new int[] {105, 342};
+                } else {
+                    return new int[] {702, 495};
+                }
+            case "luc phien mon.":
+                return new int[] {207, 349};
             case "kinh thanh dong g":
                 if (x == 32) {
                     return new int[] {511, 198};

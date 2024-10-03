@@ -42,12 +42,11 @@ public class test {
 //        HWND handle = User32.INSTANCE.FindWindow(null, "http://colongonline.com (Minh Nguyệt)");
 //        BufferedImage image = captureWindow(handle, 145, 225, 140, 90);
 //        ImageIO.write(image, "png", new File("screenshot.png"));
-        String username = "HiênVũ";
-        int UID = 1841;
+        String username = "Jolie";
+        int UID = 414;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
         System.out.println(Arrays.toString(getMouseLocation(hwnd)));
-        System.out.println(getPixelColor(hwnd, 588, 317));
-        System.out.println(getPixelColor(hwnd, 216, 304));
+        System.out.println(getLocation());
     }
     // 3f - c
     // 56y - a
