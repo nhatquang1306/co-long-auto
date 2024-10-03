@@ -67,7 +67,14 @@ public class CoLongMulti extends Thread {
             visited.add("thanh dan.");
             for (int j = 0; j < questCount; j++) {
                 Queue<Dest> queue = new LinkedList<>();
-                goToTTTC();
+                if (j > 0) {
+                    goToTTTC();
+                } else if (getLocation().trim().equals("truong thanh tieu.")) {
+                    int[] cur = getCoordinates();
+                    if (cur[0] != 18 || cur[1] != 72) {
+                        goToTTTC();
+                    }
+                }
                 receiveQuest(queue, visited);
                 traveling(queue, "truong thanh tieu.", visited);
             }

@@ -184,7 +184,7 @@ public class SwitchStatements {
                 return new int[] {546, 464};
             case "lien hoan o.":
                 return new int[] {434, 243};
-            case "kinh thanh nam g":
+            case "kinh thanh nam gi":
                 if (x == 26) {
                     return new int[] {620, 473};
                 } else {
