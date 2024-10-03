@@ -67,15 +67,18 @@ public class CoLongMulti extends Thread {
             visited.add("thanh dan.");
             for (int j = 0; j < questCount; j++) {
                 Queue<Dest> queue = new LinkedList<>();
-                if (j > 0) {
-                    goToTTTC();
-                } else if (getLocation().trim().equals("truong thanh tieu.")) {
+                boolean closeInventory = true;
+                if (j == 0 && getLocation().trim().equals("truong thanh tieu.")) {
                     int[] cur = getCoordinates();
                     if (cur[0] != 18 || cur[1] != 72) {
                         goToTTTC();
+                    } else {
+                        closeInventory = false;
                     }
+                } else {
+                    goToTTTC();
                 }
-                receiveQuest(queue, visited);
+                receiveQuest(queue, visited, closeInventory);
                 traveling(queue, "truong thanh tieu.", visited);
             }
         } catch (Exception _) {
@@ -105,11 +108,13 @@ public class CoLongMulti extends Thread {
         }
     }
 
-    private void receiveQuest(Queue<Dest> queue, Set<String> visited) throws InterruptedException, TesseractException {
+    private void receiveQuest(Queue<Dest> queue, Set<String> visited, boolean closeInventory) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        click(569, 586);
+        if (closeInventory) {
+            click(569, 586);
+        }
         click(306, 145); // click on NPC
         waitForPrompt(223, 295, 120, 20, "van tieu");
         click(272, 305); // click on van tieu ca nhan
