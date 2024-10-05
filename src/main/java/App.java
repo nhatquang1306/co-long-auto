@@ -156,8 +156,6 @@ public class App {
                 int questCount = Integer.parseInt(b);
 
                 if (!handleMap.containsKey(UID)) {
-                    uidFields.get(i).setText("");
-                    questCountFields.get(i).setText("10");
                     return;
                 } else if (questCount <= 0 || questCount >= 10) {
                     questCount = 10;
