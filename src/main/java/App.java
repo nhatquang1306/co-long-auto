@@ -25,7 +25,7 @@ public class App {
     private static List<JCheckBox> flagButtons;
     private static List<JButton> stopButtons;
     private static List<JButton> startButtons;
-    private static Map<Integer, HWND> handleMap;
+    private static Map<Integer, Pair> handleMap;
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Auto Vận Tiêu");
@@ -155,7 +155,7 @@ public class App {
                 int UID = Integer.parseInt(a);
                 int questCount = Integer.parseInt(b);
 
-                if (UID <= 1) {
+                if (!handleMap.containsKey(UID)) {
                     uidFields.get(i).setText("");
                     questCountFields.get(i).setText("10");
                     return;
@@ -168,9 +168,10 @@ public class App {
                 int newbie = keyMap.get(newbieButtons.get(i).getText());
                 int pet = keyMap.get(petButtons.get(i).getText());
                 boolean flag = flagButtons.get(i).isSelected();
+                Pair pair = handleMap.get(UID);
 
                 startButtons.get(i).setEnabled(false);
-                CoLongMulti colong = new CoLongMulti(UID, questCount, skill, newbie, pet, flag, startButtons.get(i), handleMap);
+                CoLongMulti colong = new CoLongMulti(questCount, skill, newbie, pet, flag, startButtons.get(i), pair.handle, pair.username);
                 ActionListener actionListener = new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
@@ -204,25 +205,27 @@ public class App {
         handleMap = getAllWindows();
     }
 
-    private static Map<Integer, HWND> getAllWindows() {
+    private static Map<Integer, Pair> getAllWindows() {
         User32 user32 = User32.INSTANCE;
-        Map<Integer, HWND> res = new HashMap<>();
+        Map<Integer, Pair> res = new HashMap<>();
         user32.EnumWindows((hwnd, arg) -> {
             char[] text = new char[100];
             user32.GetWindowText(hwnd, text, 100);
             String title = new String(text).trim();
             if (title.startsWith("http://colongonline.com")) {
                 int UID = 0;
-                int index = 23;
-                while (index < title.length() && title.charAt(index) != ':') {
+                int index = 24;
+                StringBuilder username = new StringBuilder();
+                while (index < title.length() && title.charAt(index) != '[') {
+                    username.append(title.charAt(index));
                     index++;
                 }
-                index += 2;
+                index += 6;
                 while (index < title.length() && Character.isDigit(title.charAt(index))) {
                     UID = UID * 10 + Character.getNumericValue(title.charAt(index));
                     index++;
                 }
-                res.put(UID, hwnd);
+                res.put(UID, new Pair(username.toString(), hwnd));
             }
             return true;
         }, null);
@@ -244,4 +247,13 @@ public class App {
         keyMap.put("Chay", 0);
         return keyMap;
     }
+    private static class Pair {
+        String username;
+        HWND handle;
+        public Pair(String username, HWND handle) {
+            this.username = username;
+            this.handle = handle;
+        }
+    }
+
 }

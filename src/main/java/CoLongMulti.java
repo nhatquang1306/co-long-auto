@@ -9,6 +9,7 @@ import net.sourceforge.tess4j.TesseractException;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.*;
 import java.text.Normalizer;
 import java.util.*;
 
@@ -27,6 +28,7 @@ public class CoLongMulti extends Thread {
     private final Object lock;
     private final int[] flag;
     private final JButton startButton;
+    private final String username;
     private static final Color everyColor1 = new Color(239, 239, 15);
     private static final Color everyColor2 = new Color(239, 207, 15);
     private static final Color characterColor1 = new Color(175, 143, 175);
@@ -35,12 +37,9 @@ public class CoLongMulti extends Thread {
     private static final Color petColor = new Color(111, 207, 215);
     private static final Color black = new Color(0, 0, 0);
 
-    public CoLongMulti(int UID, int questCount, int skill, int newbie, int pet, boolean flag, JButton startButton, Map<Integer, HWND> handleMap) throws Exception {
-        handle = handleMap.get(UID);
-        if (handle == null) {
-            throw new Exception(STR."Không có UID \{UID}.");
-        }
-
+    public CoLongMulti(int questCount, int skill, int newbie, int pet, boolean flag, JButton startButton, HWND handle, String username) throws Exception {
+        this.handle = handle;
+        this.username = username;
         this.questCount = questCount;
         this.skill = skill;
         this.newbie = newbie;
@@ -78,7 +77,7 @@ public class CoLongMulti extends Thread {
                 } else {
                     goToTTTC();
                 }
-                receiveQuest(queue, visited, closeInventory);
+                receiveQuest(queue, visited, closeInventory, j == questCount - 1);
                 traveling(queue, "truong thanh tieu.", visited);
             }
         } catch (Exception _) {
@@ -108,7 +107,7 @@ public class CoLongMulti extends Thread {
         }
     }
 
-    private void receiveQuest(Queue<Dest> queue, Set<String> visited, boolean closeInventory) throws InterruptedException, TesseractException {
+    private void receiveQuest(Queue<Dest> queue, Set<String> visited, boolean closeInventory, boolean savePoints) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
@@ -119,6 +118,9 @@ public class CoLongMulti extends Thread {
         waitForPrompt(223, 295, 120, 20, "van tieu");
         click(272, 305); // click on van tieu ca nhan
         waitForPrompt(223, 335, 180, 20, "cap 2");
+        if (savePoints) {
+            savePoints();
+        }
         click(285, 344); // click on cap 2
         waitForDialogueBox(50);
         BufferedImage image = captureWindow(224, 257, 355, 40);
@@ -483,6 +485,43 @@ public class CoLongMulti extends Thread {
 
     private void petDefense() throws InterruptedException {
         click(760, 246);
+    }
+
+    private void savePoints() {
+        synchronized (lock) {
+            TreeMap<String, String> map = new TreeMap<>();
+            try (BufferedReader br = new BufferedReader(new FileReader("input/tesseract/points.txt"))) {
+                String line = br.readLine();
+                while (line != null) {
+                    String[] values = line.split(":", 2); // Split on the first '='
+                    if (values.length == 2) {
+                        map.put(values[0], values[1]);
+                    }
+                    line = br.readLine();
+                }
+            } catch (Exception _) {
+
+            }
+            try (
+                    FileWriter fileWriter = new FileWriter("input/tesseract/points.txt");
+                    PrintWriter printWriter = new PrintWriter(fileWriter);
+            ) {
+                BufferedImage image = captureWindow(295, 307, 50, 20);
+                int points = 0;
+                for (char c : tesseract.doOCR(image).toCharArray()) {
+                    if (Character.isDigit(c)) {
+                        points = points * 10 + Character.getNumericValue(c);
+                    }
+                }
+                map.put(username, String.valueOf(points - 10));
+
+                for (Map.Entry<String, String> entry : map.entrySet()) {
+                    printWriter.println(entry.getKey() + ":" + entry.getValue());
+                }
+            } catch (Exception _) {
+
+            }
+        }
     }
 
     public BufferedImage captureWindow(int x, int y, int width, int height) {

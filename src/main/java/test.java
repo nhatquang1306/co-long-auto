@@ -13,7 +13,9 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.Normalizer;
 import java.util.Arrays;
 
@@ -26,6 +28,7 @@ public class test {
     private static HWND hwnd;
     private static Tesseract tesseract;
     private static Object lock;
+    private static Color hair = new Color(41, 40, 24);
 
     public static void main(String[] args) throws InterruptedException, IOException, TesseractException {
         GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -38,15 +41,17 @@ public class test {
 
         lock = new Object();
 
-
-//        HWND handle = User32.INSTANCE.FindWindow(null, "http://colongonline.com (Minh Nguyệt)");
-//        BufferedImage image = captureWindow(handle, 145, 225, 140, 90);
-//        ImageIO.write(image, "png", new File("screenshot.png"));
-        String username = "Bé";
-        int UID = 392;
+        String username = "HiênVũ";
+        int UID = 1841;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
-        System.out.println(getLocation());
+//        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
+//        System.out.println(getPixelColor(hwnd, 86, 226));
+//        BufferedImage image = captureWindow(3, 26, 800, 600);
+//        ImageIO.write(image, "png", new File("screenshot.png"));
+
+
     }
+    // 41 40 24
     // 3f - c
     // 56y - a
     // 7k - b
@@ -149,8 +154,15 @@ public class test {
                 int blue = buffer.getByte(pixelOffset) & 0xFF;
                 int green = buffer.getByte(pixelOffset + 1) & 0xFF;
                 int red = buffer.getByte(pixelOffset + 2) & 0xFF;
-                int rgb = (red << 16) | (green << 8) | blue;
-                image.setRGB(col, row, rgb);
+
+//                if (red == 240 && green == 248 && blue == 0) {
+                    int rgb = (red << 16) | (green << 8) | blue;
+                    image.setRGB(col, row, rgb);
+//                }
+
+
+
+
             }
         }
         return image;
