@@ -490,29 +490,14 @@ public class CoLongMulti extends Thread {
     private void savePoints() {
         synchronized (lock) {
             Map<String, Integer> map = new HashMap<>();
-            try (BufferedReader br = new BufferedReader(new FileReader("input/tesseract/points.txt"))) {
-                String line = br.readLine();
-                while (line != null) {
-                    String[] values = line.split(":", 2); // Split on the first '='
-                    if (values.length == 2) {
-                        int points = 0;
-                        for (char c : values[1].toCharArray()) {
-                            if (Character.isDigit(c)) {
-                                points = points * 10 + Character.getNumericValue(c);
-                            }
-                        }
-                        map.put(values[0], points);
-                    }
-                    line = br.readLine();
-                }
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("input/tesseract/points.ser"))) {
+                map = (HashMap<String, Integer>) ois.readObject();
             } catch (Exception _) {
 
             }
-            try (
-                    FileWriter fileWriter = new FileWriter("input/tesseract/points.txt");
-                    PrintWriter printWriter = new PrintWriter(fileWriter);
-            ) {
-                BufferedImage image = captureWindow(295, 307, 50, 20);
+
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("input/tesseract/points.ser"))) {
+                BufferedImage image = captureWindow(295, 307, 50, 18);
                 int points = 0;
                 for (char c : tesseract.doOCR(image).toCharArray()) {
                     if (Character.isDigit(c)) {
@@ -520,8 +505,7 @@ public class CoLongMulti extends Thread {
                     }
                 }
                 map.put(username, points - 10);
-                map.entrySet().stream().sorted(Map.Entry.comparingByValue())
-                        .forEach(entry -> printWriter.println(entry.getKey() + ":" + entry.getValue()));
+                oos.writeObject(map);
             } catch (Exception _) {
 
             }

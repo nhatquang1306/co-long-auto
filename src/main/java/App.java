@@ -8,7 +8,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.File;
+import java.io.*;
 import java.util.*;
 import java.util.List;
 import com.sun.jna.platform.win32.WinDef.HWND;
@@ -26,6 +26,7 @@ public class App {
     private static List<JButton> stopButtons;
     private static List<JButton> startButtons;
     private static Map<Integer, Pair> handleMap;
+    private static final Object lock = new Object();
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Auto Vận Tiêu");
@@ -62,11 +63,15 @@ public class App {
         plusButton.setHorizontalAlignment(SwingConstants.LEFT);
         panel.add(plusButton);
 
-        JPanel[] empties = new JPanel[6];
-        for (int i = 0; i < 6; i++) {
+        JPanel[] empties = new JPanel[5];
+        for (int i = 0; i < 5; i++) {
             empties[i] = new JPanel();
             panel.add(empties[i]);
         }
+
+        JButton pointsButton = new JButton("Points");
+        pointsButton.addActionListener(e -> orderPoints());
+        panel.add(pointsButton);
 
         JButton resetButton = new JButton("Reset");
         resetButton.addActionListener(e -> {
@@ -79,7 +84,8 @@ public class App {
                 return;
             }
             panel.remove(resetButton);
-            for (int i = 5; i >= 0; i--) {
+            panel.remove(pointsButton);
+            for (int i = 4; i >= 0; i--) {
                 panel.remove(empties[i]);
             }
             panel.remove(plusButton);
@@ -89,9 +95,10 @@ public class App {
             panel.setLayout(new GridLayout(uidFields.size() + 2, 8, 5, 5));
 
             panel.add(plusButton);
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 5; i++) {
                 panel.add(empties[i]);
             }
+            panel.add(pointsButton);
             panel.add(resetButton);
         });
 
@@ -228,6 +235,25 @@ public class App {
             return true;
         }, null);
         return res;
+    }
+
+    private static void orderPoints() {
+        synchronized (lock) {
+            Map<String, Integer> map = new HashMap<>();
+            try (FileInputStream fileInputStream = new FileInputStream("input/tesseract/points.ser");
+                 ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream)) {
+                map = (HashMap<String, Integer>) objectInputStream.readObject();
+            } catch (Exception _) {
+
+            }
+            try (FileWriter fileWriter = new FileWriter("input/tesseract/points.txt");
+                 PrintWriter printWriter = new PrintWriter(fileWriter);) {
+                map.entrySet().stream().sorted(Map.Entry.comparingByValue())
+                        .forEach(entry -> printWriter.println(entry.getKey() + ": " + entry.getValue()));
+            } catch (Exception _) {
+
+            }
+        }
     }
 
     private static Map<String, Integer> getKeyMap() {

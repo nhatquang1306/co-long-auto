@@ -41,15 +41,23 @@ public class test {
 
         lock = new Object();
 
-        String username = "Jolie";
-        int UID = 414;
+        String username = "LanChi";
+        int UID = 3365;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
 //        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
 //        System.out.println(getPixelColor(hwnd, 86, 226));
-        BufferedImage image = captureWindow(3, 26, 800, 600);
+//        BufferedImage image = captureWindow(3, 26, 800, 600);
+//        ImageIO.write(image, "png", new File("screenshot.png"));
+
+        BufferedImage image = captureWindow(295, 307, 50, 18);
+        int points = 0;
+        for (char c : tesseract.doOCR(image).toCharArray()) {
+            if (Character.isDigit(c)) {
+                points = points * 10 + Character.getNumericValue(c);
+            }
+        }
+        System.out.println(points);
         ImageIO.write(image, "png", new File("screenshot.png"));
-
-
     }
     // 41 40 24
     // 3f - c
@@ -155,10 +163,10 @@ public class test {
                 int green = buffer.getByte(pixelOffset + 1) & 0xFF;
                 int red = buffer.getByte(pixelOffset + 2) & 0xFF;
 
-                if (red == 240 && green == 248 && blue == 0) {
+//                if (red == 240 && green == 248 && blue == 0) {
                     int rgb = (red << 16) | (green << 8) | blue;
                     image.setRGB(col, row, rgb);
-                }
+//                }
                 // 240 248 0
 
 
