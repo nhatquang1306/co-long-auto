@@ -489,7 +489,7 @@ public class CoLongMulti extends Thread {
 
     private void savePoints() {
         synchronized (lock) {
-            TreeMap<Integer, String> map = new TreeMap<>();
+            Map<String, Integer> map = new HashMap<>();
             try (BufferedReader br = new BufferedReader(new FileReader("input/tesseract/points.txt"))) {
                 String line = br.readLine();
                 while (line != null) {
@@ -501,7 +501,7 @@ public class CoLongMulti extends Thread {
                                 points = points * 10 + Character.getNumericValue(c);
                             }
                         }
-                        map.put(points, values[0]);
+                        map.put(values[0], points);
                     }
                     line = br.readLine();
                 }
@@ -519,11 +519,9 @@ public class CoLongMulti extends Thread {
                         points = points * 10 + Character.getNumericValue(c);
                     }
                 }
-                map.put(points - 10, username);
-
-                for (Map.Entry<Integer, String> entry : map.entrySet()) {
-                    printWriter.println(entry.getValue() + ":" + entry.getKey());
-                }
+                map.put(username, points - 10);
+                map.entrySet().stream().sorted(Map.Entry.comparingByValue())
+                        .forEach(entry -> printWriter.println(entry.getKey() + ":" + entry.getValue()));
             } catch (Exception _) {
 
             }

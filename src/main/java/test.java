@@ -41,13 +41,13 @@ public class test {
 
         lock = new Object();
 
-        String username = "HiênVũ";
-        int UID = 1841;
+        String username = "Jolie";
+        int UID = 414;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
 //        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
 //        System.out.println(getPixelColor(hwnd, 86, 226));
-//        BufferedImage image = captureWindow(3, 26, 800, 600);
-//        ImageIO.write(image, "png", new File("screenshot.png"));
+        BufferedImage image = captureWindow(3, 26, 800, 600);
+        ImageIO.write(image, "png", new File("screenshot.png"));
 
 
     }
@@ -155,10 +155,11 @@ public class test {
                 int green = buffer.getByte(pixelOffset + 1) & 0xFF;
                 int red = buffer.getByte(pixelOffset + 2) & 0xFF;
 
-//                if (red == 240 && green == 248 && blue == 0) {
+                if (red == 240 && green == 248 && blue == 0) {
                     int rgb = (red << 16) | (green << 8) | blue;
                     image.setRGB(col, row, rgb);
-//                }
+                }
+                // 240 248 0
 
 
 
