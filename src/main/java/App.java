@@ -175,8 +175,8 @@ public class App {
                 boolean flag = flagButtons.get(i).isSelected();
                 Pair pair = handleMap.get(UID);
 
-                startButtons.get(i).setEnabled(false);
                 CoLongMulti colong = new CoLongMulti(questCount, skill, newbie, pet, flag, startButtons.get(i), pair.handle, pair.username);
+                startButtons.get(i).setEnabled(false);
                 ActionListener actionListener = new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {

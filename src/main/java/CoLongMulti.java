@@ -46,13 +46,13 @@ public class CoLongMulti extends Thread {
         this.pet = pet;
         this.flag = new int[]{445, 417, flag ? 0 : 1};
 
-        this.tesseract = new Tesseract();
-        this.tesseract.setDatapath("input/tesseract/tessdata");
-        this.tesseract.setLanguage("vie");
-
         this.lock = new Object();
         this.terminateFlag = false;
         this.startButton = startButton;
+
+        this.tesseract = new Tesseract();
+        this.tesseract.setDatapath("input/tesseract/tessdata");
+        this.tesseract.setLanguage("vie");
     }
 
     public void run() {
@@ -255,7 +255,7 @@ public class CoLongMulti extends Thread {
                 Thread.sleep(200);
             }
             if (turn == 1 || turn == 2) {
-                waitForDialogueBox(7);
+                waitForDialogueBox(5);
                 click(557, 266);
             } else {
                 // move mouse out the way
@@ -392,39 +392,8 @@ public class CoLongMulti extends Thread {
         }
         Thread.sleep(1000);
         click(557, 287);
-        waitForPrompt(223, 278, 150, 20, "hoang thach");
+        waitForDialogueBox(50);
         click(259, 286);
-    }
-
-    private void closeTutorial() throws InterruptedException {
-        if (hasDialogueBox()) {
-            click(557, 266);
-        }
-    }
-
-    private boolean waitForPrompt(int x, int y, int width, int height, String target) throws TesseractException, InterruptedException {
-        int timer = 0;
-        while (timer++ < 50 && !terminateFlag && !isInBattle()) {
-            BufferedImage image = captureWindow(x, y, width, height);
-            String str = removeDiacritics(tesseract.doOCR(image));
-            if (str.contains(target)) {
-                return true;
-            }
-            Thread.sleep(200);
-        }
-        return false;
-    }
-
-    private void waitForDefensePrompt() throws TesseractException, InterruptedException {
-        int timer = 0;
-        while (timer++ < 50 && !terminateFlag) {
-            BufferedImage image = captureWindow(737, 239, 50, 20);
-            String str = removeDiacritics(tesseract.doOCR(image));
-            if (str.contains("thu")) {
-                return;
-            }
-            Thread.sleep(200);
-        }
     }
 
     private boolean isInBattle() {
@@ -577,7 +546,39 @@ public class CoLongMulti extends Thread {
         return r == 254 && g == 254 && b == 254;
     }
 
+    private void closeTutorial() throws InterruptedException {
+        if (hasDialogueBox()) {
+            click(557, 266);
+        }
+    }
+
+    private boolean waitForPrompt(int x, int y, int width, int height, String target) throws TesseractException, InterruptedException {
+        int timer = 0;
+        while (timer++ < 50 && !terminateFlag && !isInBattle()) {
+            BufferedImage image = captureWindow(x, y, width, height);
+            String str = removeDiacritics(tesseract.doOCR(image));
+            if (str.contains(target)) {
+                return true;
+            }
+            Thread.sleep(200);
+        }
+        return false;
+    }
+
+    private void waitForDefensePrompt() throws TesseractException, InterruptedException {
+        int timer = 0;
+        while (timer++ < 50 && !terminateFlag) {
+            BufferedImage image = captureWindow(737, 239, 50, 20);
+            String str = removeDiacritics(tesseract.doOCR(image));
+            if (str.contains("thu")) {
+                return;
+            }
+            Thread.sleep(200);
+        }
+    }
+
     private boolean waitForDialogueBox(int limit) throws InterruptedException {
+        Thread.sleep(400);
         int timer = 0;
         while (timer++ < limit && !terminateFlag) {
             if (hasDialogueBox()) {
@@ -623,7 +624,7 @@ public class CoLongMulti extends Thread {
             Thread.sleep(300);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONDOWN, new WPARAM(WinUser.MK_LBUTTON), lParam);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
-            Thread.sleep(300);
+            Thread.sleep(400);
         }
     }
 
@@ -636,7 +637,7 @@ public class CoLongMulti extends Thread {
             Thread.sleep(300);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONDOWN, new WPARAM(WinUser.MK_RBUTTON), lParam);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONUP, new WPARAM(0), lParam);
-            Thread.sleep(300);
+            Thread.sleep(400);
         }
     }
 
