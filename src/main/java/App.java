@@ -175,18 +175,18 @@ public class App {
                 boolean flag = flagButtons.get(i).isSelected();
                 Pair pair = handleMap.get(UID);
 
-                CoLongMulti colong = new CoLongMulti(questCount, skill, newbie, pet, flag, startButtons.get(i), pair.handle, pair.username);
+                CoLongMulti coLong = new CoLongMulti(questCount, skill, newbie, pet, flag, startButtons.get(i), pair.handle, pair.username);
                 startButtons.get(i).setEnabled(false);
                 ActionListener actionListener = new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        colong.setTerminateFlag();
+                        coLong.setTerminateFlag();
                         stopButtons.get(i).removeActionListener(this);
                     }
                 };
                 stopButtons.get(i).addActionListener(actionListener);
-                colong.start();
-            } catch (NumberFormatException e1) {
+                coLong.start();
+            } catch (NumberFormatException _) {
                 uidFields.get(i).setText("");
                 questCountFields.get(i).setText("10");
             } catch (Exception _) {

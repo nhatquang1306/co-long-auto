@@ -17,7 +17,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.Normalizer;
-import java.util.Arrays;
+import java.util.*;
 
 import javax.imageio.ImageIO;
 
@@ -37,34 +37,66 @@ public class test {
 
         tesseract = new Tesseract();
         tesseract.setDatapath("input/tesseract/tessdata");
-        tesseract.setLanguage("vie");
+        tesseract.setLanguage("eng");
 
         lock = new Object();
 
-        String username = "LanChi";
-        int UID = 3365;
+        String username = "Bé";
+        int UID = 392;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
-//        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
-//        System.out.println(getPixelColor(hwnd, 86, 226));
-//        BufferedImage image = captureWindow(3, 26, 800, 600);
-//        ImageIO.write(image, "png", new File("screenshot.png"));
 
-        BufferedImage image = captureWindow(295, 307, 50, 18);
-        int points = 0;
-        for (char c : tesseract.doOCR(image).toCharArray()) {
-            if (Character.isDigit(c)) {
-                points = points * 10 + Character.getNumericValue(c);
-            }
-        }
-        System.out.println(points);
-        ImageIO.write(image, "png", new File("screenshot.png"));
+//
+//        System.out.println(new Color(image.getRGB(1, 1)));
+//        ImageIO.write(image, "png", new File("8.png"));
+
+
+
+
+
+
+
     }
+
     // 41 40 24
     // 3f - c
     // 56y - a
     // 7k - b
     // 4tg - a
     // 734 - d
+
+
+    //        int points = 0;
+//        System.out.println(tesseract.doOCR(image));
+//        for (char c : tesseract.doOCR(image).toCharArray()) {
+//            if (Character.isDigit(c)) {
+//                points = points * 10 + Character.getNumericValue(c);
+//            }
+//        }
+//        System.out.println(points);
+
+    //        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
+//        System.out.println(getPixelColor(hwnd, 86, 226));
+//        BufferedImage image = captureWindow(3, 26, 800, 600);
+//        ImageIO.write(image, "png", new File("screenshot.png"));
+
+    private static int[] getCoordinates() throws TesseractException {
+        BufferedImage image = captureWindow(653, 51, 125, 18);
+        char[] coords = removeDiacritics(tesseract.doOCR(image)).toCharArray();
+        System.out.println(tesseract.doOCR(image));
+        int[] res = new int[2];
+        int i = 0;
+        for (; i < coords.length && coords[i] != 'y'; i++) {
+            if (coords[i] >= '0' && coords[i] <= '9') {
+                res[0] = res[0] * 10 + (coords[i] - '0');
+            }
+        }
+        for (; i < coords.length; i++) {
+            if (coords[i] >= '0' && coords[i] <= '9') {
+                res[1] = res[1] * 10 + (coords[i] - '0');
+            }
+        }
+        return res;
+    }
 
     public static void click(int a, int b) throws InterruptedException {
         synchronized (lock) {
@@ -74,8 +106,9 @@ public class test {
             User32.INSTANCE.SendMessage(hwnd, CoLongMulti.WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
             Thread.sleep(300);
             User32.INSTANCE.SendMessage(hwnd, CoLongMulti.WinUser.WM_LBUTTONDOWN, new WPARAM(CoLongMulti.WinUser.MK_LBUTTON), lParam);
+            Thread.sleep(100);
             User32.INSTANCE.SendMessage(hwnd, CoLongMulti.WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
-            Thread.sleep(500);
+            Thread.sleep(300);
         }
     }
 
