@@ -40,3 +40,4 @@ build/
 ### Custom ignore ###
 input/tesseract/points.ser
 input/tesseract/points.txt
+screenshot.png

@@ -12,10 +12,7 @@ import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.text.Normalizer;
 import java.util.*;
 
@@ -45,17 +42,7 @@ public class test {
         int UID = 414;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
 
-        click(766, 183);
-        click(101, 496);
-//        System.out.println(new Color(image.getRGB(1, 1)));
-//        ImageIO.write(image, "png", new File("8.png"));
-
-
-
-
-
-
-
+        removeAccountPoints();
     }
 
     // 41 40 24
@@ -65,21 +52,44 @@ public class test {
     // 4tg - a
     // 734 - d
 
+    private static void removeAccountPoints() {
+        Map<String, Integer> map = new HashMap<>();
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("input/tesseract/points.ser"))) {
+            map = (HashMap<String, Integer>) ois.readObject();
+        } catch (Exception _) {
 
-    //        int points = 0;
-//        System.out.println(tesseract.doOCR(image));
-//        for (char c : tesseract.doOCR(image).toCharArray()) {
-//            if (Character.isDigit(c)) {
-//                points = points * 10 + Character.getNumericValue(c);
-//            }
-//        }
-//        System.out.println(points);
+        }
+        Set<String> removes = new HashSet<>();
+        for (String s : map.keySet()) {
+            if (s.equals("Zen") || s.equals("Mạc") || s.contains("•")) {
+                removes.add(s);
+            } else if (s.startsWith("XĐ")) {
+                int num = 0;
+                for (int i = 2; i < s.length(); i++) {
+                    num = num * 10 + Character.getNumericValue(s.charAt(i));
+                }
+                if (num >= 31 && num <= 65) {
+                    removes.add(s);
+                }
+            }
+        }
+        for (String s : removes) {
+            map.remove(s);
+        }
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("input/tesseract/points.ser"))) {
+            oos.writeObject(map);
+        } catch (Exception _) {
 
-    //        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
+        }
+    }
+
+    private static void comments() {
+        // get full screen
+//        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
 //        System.out.println(getPixelColor(hwnd, 86, 226));
 //        BufferedImage image = captureWindow(3, 26, 800, 600);
 //        ImageIO.write(image, "png", new File("screenshot.png"));
-
+    }
     private static int[] getCoordinates() throws TesseractException {
         BufferedImage image = captureWindow(653, 51, 125, 18);
         char[] coords = removeDiacritics(tesseract.doOCR(image)).toCharArray();

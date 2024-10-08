@@ -100,15 +100,15 @@ public class CoLongMulti extends Thread {
         if (terminateFlag) {
             return;
         }
-        click(569, 586);
-        rightClick(flag); // right click on flag
+        do {
+            click(569, 586);
+            rightClick(flag);
+        } while (!waitForDialogueBox(100));
         if (flag[2] == 0) {
-            waitForDialogueBox(100);
             click(348, 287); // click on toa do
             waitForDialogueBox(100);
             click(259, 286); // click take me there
         } else {
-            waitForDialogueBox(100);
             click(321, 359);
         }
         while (!getLocation().contains("truong thanh") && !terminateFlag) {
@@ -255,17 +255,17 @@ public class CoLongMulti extends Thread {
         // ta so tan thu: 143 175 111
         // ta so tro thu: 111 207 215
         int turn = 0;
+        boolean clickedOnDialogueBox = false;
         while (!terminateFlag && isInBattle()) {
             // wait until timer shows up
             while (!terminateFlag && (!isWhite(378, 90) || isWhite(405, 325))) {
-                if (!isInBattle()) {
-                    return;
-                }
+                if (!isInBattle()) return;
                 Thread.sleep(200);
             }
-            if (turn == 1 || turn == 2) {
-                waitForDialogueBox(7);
+            if (!clickedOnDialogueBox && (turn == 1 || turn == 2) && waitForDialogueBox(10)) {
                 click(557, 266);
+                clickedOnDialogueBox = true;
+                continue;
             } else {
                 // move mouse out the way
                 synchronized (lock) {
