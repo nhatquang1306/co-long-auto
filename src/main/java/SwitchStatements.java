@@ -34,7 +34,7 @@ public class SwitchStatements {
                     queue.offer(new Dest(74, 86, "vo danh"));
                 } else if (c2 == 't') { // tiet dai han
                     res = true;
-                    queue.offer(new Dest(102, 497, 161, 49, "dieu phong"));
+                    queue.offer(new Dest(101, 496, 161, 49, "dieu phong"));
                     queue.offer(new Dest(51, 161, "hao han"));
                 } else if (c2 == 'n') { // trinh trung
                     res = true;
@@ -50,7 +50,7 @@ public class SwitchStatements {
                 char c = destination.charAt(index + 3);
                 if (c == 'K') {
                     res = true;
-                    queue.offer(new Dest(102, 497, 161, 49, "dieu phong"));
+                    queue.offer(new Dest(101, 496, 161, 49, "dieu phong"));
                     queue.offer(new Dest(18, 60, "quan dong"));
                 } else { // ma quan lao thai ba
                     queue.offer(new Dest(22, 110, "ky dao"));

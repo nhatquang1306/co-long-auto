@@ -41,11 +41,12 @@ public class test {
 
         lock = new Object();
 
-        String username = "Bé";
-        int UID = 392;
+        String username = "Jolie";
+        int UID = 414;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
 
-//
+        click(766, 183);
+        click(101, 496);
 //        System.out.println(new Color(image.getRGB(1, 1)));
 //        ImageIO.write(image, "png", new File("8.png"));
 
