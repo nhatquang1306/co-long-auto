@@ -27,12 +27,6 @@ public class CoLongMulti extends Thread {
     private final int[] flag;
     private final JButton startButton;
     private final String username;
-    private static final Color everyColor1 = new Color(239, 239, 15);
-    private static final Color everyColor2 = new Color(239, 207, 15);
-    private static final Color characterColor1 = new Color(175, 143, 175);
-    private static final Color characterColor2 = new Color(206, 146, 207);
-    private static final Color newbieColor = new Color(143, 175, 111);
-    private static final Color petColor = new Color(111, 207, 215);
     private static final Color black = new Color(0, 0, 0);
     private static final Color white = new Color(254, 254, 254);
     private static final int[][] colorCoords = new int[][] {{1, 1}, {1, 4}, {2, 7}, {3, 1}, {5, 1}, {5, 8}};
@@ -100,10 +94,10 @@ public class CoLongMulti extends Thread {
         do {
             click(569, 586);
             rightClick(flag);
-        } while (!waitForDialogueBox(100));
+        } while (!waitForDialogueBox(20));
         if (flag[2] == 0) {
             click(348, 287); // click on toa do
-            waitForDialogueBox(100);
+            waitForDialogueBox(20);
             click(259, 286); // click take me there
         } else {
             click(321, 359);
@@ -122,14 +116,14 @@ public class CoLongMulti extends Thread {
         }
         do {
             click(306, 145); // click on NPC
-        } while (!waitForDialogueBox(100));
+        } while (!waitForDialogueBox(20));
         click(272, 305); // click on van tieu ca nhan
-        waitForDialogueBox(100);
+        waitForDialogueBox(20);
         if (savePoints) {
             savePoints();
         }
         click(285, 344); // click on cap 2
-        waitForDialogueBox(100);
+        waitForDialogueBox(20);
         BufferedImage image = captureWindow(224, 257, 355, 40);
         click(557, 266);
         parseDestination(queue, tesseract.doOCR(image), visited);
@@ -256,9 +250,9 @@ public class CoLongMulti extends Thread {
                 if (!isInBattle()) return;
                 Thread.sleep(200);
             }
-            if ((turn == 1 || turn == 2) && waitForDialogueBox(8)) {
+            if ((turn == 1 || turn == 2) && waitForDialogueBox(2)) {
                 click(557, 266);
-                waitForDefensePrompt(1, 50);
+                waitForDefensePrompt(1, 10);
             } else {
                 // move mouse out the way
                 mouseMove(270, 566);
@@ -274,8 +268,9 @@ public class CoLongMulti extends Thread {
     }
 
     public boolean waitForDefensePrompt(int person, int limit) throws TesseractException, InterruptedException {
-        int timer = 0;
-        while (timer++ < limit && !terminateFlag) {
+        long start = System.currentTimeMillis();
+        limit *= 1000;
+        while (System.currentTimeMillis() - start < limit && !terminateFlag) {
             BufferedImage image = captureWindow(737, person == 1 ? 282 : 239, 50, 20);
             String str = removeDiacritics(tesseract.doOCR(image));
             if (str.contains("thu")) {
@@ -324,7 +319,7 @@ public class CoLongMulti extends Thread {
             BufferedImage image = captureWindow(223, arr[i], 70, 20);
             if (removeDiacritics(tesseract.doOCR(image)).contains("van tieu")) {
                 click(251, arr[i] + 10);
-                waitForDialogueBox(100);
+                waitForDialogueBox(20);
                 click(557, 266); // click on final text box;
                 return true;
             }
@@ -354,7 +349,7 @@ public class CoLongMulti extends Thread {
         }
         Thread.sleep(1000);
         click(131, 229);
-        waitForDialogueBox(100);
+        waitForDialogueBox(20);
         click(323, 456);
         while (!getLocation().contains("danh nhan") && !terminateFlag) {
             Thread.sleep(200);
@@ -368,7 +363,7 @@ public class CoLongMulti extends Thread {
         }
         Thread.sleep(1000);
         click(557, 287);
-        waitForDialogueBox(100);
+        waitForDialogueBox(20);
         click(259, 286);
     }
 
@@ -509,8 +504,9 @@ public class CoLongMulti extends Thread {
     }
 
     private boolean waitForDialogueBox(int limit) throws InterruptedException {
-        int timer = 0;
-        while (timer++ < limit && !terminateFlag) {
+        long start = System.currentTimeMillis();
+        limit *= 1000;
+        while (System.currentTimeMillis() - start < limit && !terminateFlag) {
             if (hasDialogueBox()) {
                 return true;
             }
