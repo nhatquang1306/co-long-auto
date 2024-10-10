@@ -19,9 +19,7 @@ import static com.sun.jna.platform.win32.WinUser.*;
 public class CoLongMulti extends Thread {
     private final Tesseract tesseract;
     private final int questCount;
-    private final int skill;
-    private final int newbie;
-    private final int pet;
+    private final Fight fight;
     private final HWND handle;
     private boolean terminateFlag;
     private double scale;
@@ -36,6 +34,7 @@ public class CoLongMulti extends Thread {
     private static final Color newbieColor = new Color(143, 175, 111);
     private static final Color petColor = new Color(111, 207, 215);
     private static final Color black = new Color(0, 0, 0);
+    private static final Color white = new Color(254, 254, 254);
     private static final int[][] colorCoords = new int[][] {{1, 1}, {1, 4}, {2, 7}, {3, 1}, {5, 1}, {5, 8}};
     private static final Map<Integer, Integer> colorHashes = new HashMap<>();
     private static final int[] colorDistances = new int[] {6, 8, 8, 7, 7, 7, 7, 9, 6, 7};
@@ -50,9 +49,7 @@ public class CoLongMulti extends Thread {
         this.handle = handle;
         this.username = username;
         this.questCount = questCount;
-        this.skill = skill;
-        this.newbie = newbie;
-        this.pet = pet;
+        this.fight = new Fight(skill, newbie, pet, this);
         this.flag = new int[]{445, 417, flag ? 0 : 1};
 
         this.lock = new Object();
@@ -123,8 +120,9 @@ public class CoLongMulti extends Thread {
         if (closeInventory) {
             click(569, 586);
         }
-        click(306, 145); // click on NPC
-        waitForDialogueBox(100);
+        do {
+            click(306, 145); // click on NPC
+        } while (!waitForDialogueBox(100));
         click(272, 305); // click on van tieu ca nhan
         waitForDialogueBox(100);
         if (savePoints) {
@@ -234,6 +232,7 @@ public class CoLongMulti extends Thread {
         if (terminateFlag) {
             return;
         }
+        // special map case because you can't open medium map
         if (location.equals("thanh y lau-tang.")) {
             click(383, 350);
             Thread.sleep(1000);
@@ -250,73 +249,41 @@ public class CoLongMulti extends Thread {
     }
 
     private void progressMatch() throws InterruptedException, TesseractException {
-        // gi cung so: 239 239 15 / 239 207 15
-        // tro thu so ta: 175 143 175 / 206 146 207
-        // ta so tan thu: 143 175 111
-        // ta so tro thu: 111 207 215
         int turn = 0;
-        boolean clickedOnDialogueBox = false;
         while (!terminateFlag && isInBattle()) {
-            // wait until timer shows up
-            while (!terminateFlag && (!isWhite(378, 90) || isWhite(405, 325))) {
+            // wait until the turn is started
+            while (!terminateFlag && !getPixelColor(378, 90).equals(white) || getPixelColor(405, 325).equals(white)) {
                 if (!isInBattle()) return;
                 Thread.sleep(200);
             }
-            if (!clickedOnDialogueBox && (turn == 1 || turn == 2) && waitForDialogueBox(10)) {
+            if ((turn == 1 || turn == 2) && waitForDialogueBox(8)) {
                 click(557, 266);
-                clickedOnDialogueBox = true;
-                continue;
+                waitForDefensePrompt(1, 50);
             } else {
                 // move mouse out the way
-                synchronized (lock) {
-                    long x = Math.round(267 * scale);
-                    long y = Math.round(540 * scale);
-                    LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
-                    User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
-                    Thread.sleep(200);
-                }
+                mouseMove(270, 566);
             }
             Color color = getPixelColor(231, 201);
-            int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-            if (color.equals(everyColor1) || color.equals(everyColor2)) {
-                characterAttack();
-                waitForDefensePrompt();
-                petAttack();
-            } else if (color.equals(newbieColor)) {
-                newbieAttack();
-                waitForDefensePrompt();
-                petDefense();
-            } else if (color.equals(petColor)) {
-                defense();
-                waitForDefensePrompt();
-                if (turn == 0) {
-                    petAttack();
-                } else {
-                    click(222, 167);
-                }
-            } else if (color.equals(characterColor1) || color.equals(characterColor2)) {
-                if (turn == 0) {
-                    characterAttack();
-                } else {
-                    click(222, 167);
-                }
-                waitForDefensePrompt();
-                petDefense();
-            } else if (r >= 154 && r <= 178 && g >= 191 && g <= 228 && b >= 85 && b <= 121) {
-                defense();
-                waitForDefensePrompt();
-                click(222, 167);
-            } else {
-                defense();
-                waitForDefensePrompt();
-                petDefense();
-            }
-            // wait until turn is over
-            while (!terminateFlag && (isWhite(378, 90) || isWhite(405, 325))) {
+            fight.execute(color, turn);
+            // wait until the current turn is over
+            while (!terminateFlag && getPixelColor(378, 90).equals(white) || getPixelColor(405, 325).equals(white)) {
                 Thread.sleep(200);
             }
             turn++;
         }
+    }
+
+    public boolean waitForDefensePrompt(int person, int limit) throws TesseractException, InterruptedException {
+        int timer = 0;
+        while (timer++ < limit && !terminateFlag) {
+            BufferedImage image = captureWindow(737, person == 1 ? 282 : 239, 50, 20);
+            String str = removeDiacritics(tesseract.doOCR(image));
+            if (str.contains("thu")) {
+                return true;
+            }
+            Thread.sleep(200);
+        }
+        return false;
     }
 
     private boolean arrived(Queue<Dest> queue, Set<String> visited) throws TesseractException, InterruptedException {
@@ -434,37 +401,6 @@ public class CoLongMulti extends Thread {
         return res;
     }
 
-    private void characterAttack() throws InterruptedException {
-        if (skill != 0) {
-            click(375 + skill * 35, 548);
-        }
-        Thread.sleep(200);
-        click(222, 167);
-    }
-
-    private void newbieAttack() throws InterruptedException {
-        click(375 + newbie * 35, 548);
-        Thread.sleep(200);
-        click(222, 167);
-    }
-
-    private void petAttack() throws InterruptedException {
-        if (pet != 0) {
-            click(759, 209);
-            click(254 + pet * 37, 290);
-        }
-        Thread.sleep(200);
-        click(222, 167);
-    }
-
-    private void defense() throws InterruptedException {
-        click(760, 292);
-    }
-
-    private void petDefense() throws InterruptedException {
-        click(760, 246);
-    }
-
     private void savePoints() {
         synchronized (lock) {
             Map<String, Integer> map = new HashMap<>();
@@ -566,27 +502,9 @@ public class CoLongMulti extends Thread {
         return new Color(pixelColor & 0xFF, (pixelColor >> 8) & 0xFF, (pixelColor >> 16) & 0xFF);
     }
 
-    private boolean isWhite(int x, int y) {
-        Color color = getPixelColor(x, y);
-        int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
-        return r == 254 && g == 254 && b == 254;
-    }
-
     private void closeTutorial() throws InterruptedException {
         if (hasDialogueBox()) {
             click(557, 266);
-        }
-    }
-
-    private void waitForDefensePrompt() throws TesseractException, InterruptedException {
-        int timer = 0;
-        while (timer++ < 100 && !terminateFlag) {
-            BufferedImage image = captureWindow(737, 239, 50, 20);
-            String str = removeDiacritics(tesseract.doOCR(image));
-            if (str.contains("thu")) {
-                return;
-            }
-            Thread.sleep(200);
         }
     }
 
@@ -625,6 +543,16 @@ public class CoLongMulti extends Thread {
 
     public void setTerminateFlag() {
         terminateFlag = true;
+    }
+
+    public void mouseMove(int a, int b) throws InterruptedException {
+        synchronized (lock) {
+            long x = Math.round((a - 3) * scale);
+            long y = Math.round((b - 26) * scale);
+            LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
+            User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
+            Thread.sleep(200);
+        }
     }
 
     public void click(int a, int b) throws InterruptedException {

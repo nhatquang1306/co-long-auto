@@ -34,15 +34,17 @@ public class test {
 
         tesseract = new Tesseract();
         tesseract.setDatapath("input/tesseract/tessdata");
-        tesseract.setLanguage("eng");
+        tesseract.setLanguage("vie");
 
         lock = new Object();
 
-        String username = "Jolie";
-        int UID = 414;
+        String username = "Nezumi";
+        int UID = 411;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
 
-        removeAccountPoints();
+        BufferedImage image = captureWindow(737, 282, 50, 20);
+        ImageIO.write(image, "png", new File("screenshot.png"));
+        System.out.println(removeDiacritics(tesseract.doOCR(image)));
     }
 
     // 41 40 24
