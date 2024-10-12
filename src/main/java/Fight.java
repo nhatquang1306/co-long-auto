@@ -24,18 +24,17 @@ public class Fight {
     public void execute(Color color, int turn) throws InterruptedException, TesseractException {
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue();
         if (color.equals(everyColor1) || color.equals(everyColor2)) {
+            int count = 0;
+            do {
+                characterAttack();
+            } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
             characterAttack();
-            if (!parent.waitForDefensePrompt(2, 7)) {
-                parent.click(222, 167);
-                parent.waitForDefensePrompt(2, 7);
-            }
             petAttack();
         } else if (color.equals(newbieColor)) {
-            newbieAttack();
-            if (!parent.waitForDefensePrompt(2, 7)) {
-                parent.click(222, 167);
-                parent.waitForDefensePrompt(2, 7);
-            }
+            int count = 0;
+            do {
+                newbieAttack();
+            } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
             petDefense();
         } else if (color.equals(petColor)) {
             defense();
@@ -43,12 +42,11 @@ public class Fight {
             if (turn == 0) petAttack();
             else parent.click(222, 167);
         } else if (color.equals(characterColor1) || color.equals(characterColor2)) {
-            if (turn == 0) characterAttack();
-            else parent.click(222, 167);
-            if (!parent.waitForDefensePrompt(2, 7)) {
-                parent.click(222, 167);
-                parent.waitForDefensePrompt(2, 7);
-            }
+            int count = 0;
+            do {
+                if (turn == 0) characterAttack();
+                else parent.click(222, 167);
+            } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
             petDefense();
         } else if (r >= 154 && r <= 178 && g >= 191 && g <= 228 && b >= 85 && b <= 121) {
             defense();

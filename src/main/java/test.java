@@ -38,13 +38,15 @@ public class test {
 
         lock = new Object();
 
-        String username = "Nezumi";
-        int UID = 411;
+        String username = "HiênVũ";
+        int UID = 1841;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
-
-        BufferedImage image = captureWindow(737, 282, 50, 20);
-        ImageIO.write(image, "png", new File("screenshot.png"));
-        System.out.println(removeDiacritics(tesseract.doOCR(image)));
+        removeAccountPoints();
+//        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
+//        System.out.println(Arrays.toString(getCoordinates()));
+//        BufferedImage image = captureWindow(737, 282, 50, 20);
+//        ImageIO.write(image, "png", new File("screenshot.png"));
+//        System.out.println(removeDiacritics(tesseract.doOCR(image)));
     }
 
     // 41 40 24
@@ -61,23 +63,27 @@ public class test {
         } catch (Exception _) {
 
         }
-        Set<String> removes = new HashSet<>();
-        for (String s : map.keySet()) {
-            if (s.equals("Zen") || s.equals("Mạc") || s.contains("•")) {
-                removes.add(s);
-            } else if (s.startsWith("XĐ")) {
-                int num = 0;
-                for (int i = 2; i < s.length(); i++) {
-                    num = num * 10 + Character.getNumericValue(s.charAt(i));
-                }
-                if (num >= 31 && num <= 65) {
-                    removes.add(s);
-                }
-            }
-        }
-        for (String s : removes) {
-            map.remove(s);
-        }
+        map.remove("Hỏa");
+        map.remove("Khanh1");
+        map.remove("Mộc");
+        map.remove("Bé");
+//        Set<String> removes = new HashSet<>();
+//        for (String s : map.keySet()) {
+//            if (s.equals("Zen") || s.equals("Mạc") || s.contains("•")) {
+//                removes.add(s);
+//            } else if (s.startsWith("XĐ")) {
+//                int num = 0;
+//                for (int i = 2; i < s.length(); i++) {
+//                    num = num * 10 + Character.getNumericValue(s.charAt(i));
+//                }
+//                if (num >= 31 && num <= 65) {
+//                    removes.add(s);
+//                }
+//            }
+//        }
+//        for (String s : removes) {
+//            map.remove(s);
+//        }
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("input/tesseract/points.ser"))) {
             oos.writeObject(map);
         } catch (Exception _) {

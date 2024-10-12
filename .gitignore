@@ -38,6 +38,7 @@ build/
 .DS_Store
 
 ### Custom ignore ###
+input/tesseract/clans.ser
 input/tesseract/points.ser
 input/tesseract/points.txt
 screenshot.png

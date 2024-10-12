@@ -20,6 +20,8 @@ public class CoLongMulti extends Thread {
     private final Tesseract tesseract;
     private final int questCount;
     private final Fight fight;
+    private final int clanSkill;
+    private final Clan clan;
     private final HWND handle;
     private boolean terminateFlag;
     private double scale;
@@ -32,7 +34,7 @@ public class CoLongMulti extends Thread {
     private static final int[][] colorCoords = new int[][] {{1, 1}, {1, 4}, {2, 7}, {3, 1}, {5, 1}, {5, 8}};
     private static final Map<Integer, Integer> colorHashes = new HashMap<>();
     private static final int[] colorDistances = new int[] {6, 8, 8, 7, 7, 7, 7, 9, 6, 7};
-    public CoLongMulti(int questCount, int skill, int newbie, int pet, boolean flag, JButton startButton, HWND handle, String username) throws Exception {
+    public CoLongMulti(int questCount, int skill, int newbie, int pet, int clanSkill, String clan, JButton startButton, HWND handle, String username) {
         if (colorHashes.isEmpty()) {
             int[] arr = new int[] {7, 9, 52, 16, 50, 1, 38, 4, 17, 19};
             for (int i = 0; i < 10; i++) {
@@ -44,7 +46,14 @@ public class CoLongMulti extends Thread {
         this.username = username;
         this.questCount = questCount;
         this.fight = new Fight(skill, newbie, pet, this);
-        this.flag = new int[]{445, 417, flag ? 0 : 1};
+        this.clanSkill = clanSkill;
+        if (clan.endsWith("ĐTK")) {
+            this.clan = null;
+            this.flag = new int[]{445, 417, clan.length() > 3 ? 0 : 1};
+        } else {
+            this.clan = new Clan(clan);
+            this.flag = new int[3];
+        }
 
         this.lock = new Object();
         this.terminateFlag = false;
@@ -66,20 +75,22 @@ public class CoLongMulti extends Thread {
             visited.add("thanh dan.");
             for (int j = 0; j < questCount; j++) {
                 Queue<Dest> queue = new LinkedList<>();
-                boolean closeInventory = true;
+                boolean closeInventory = false;
                 if (j == 0 && getLocation().trim().equals("truong thanh tieu.")) {
                     int[] cur = getCoordinates();
-                    if (cur[0] != 18 || cur[1] != 72) {
-                        goToTTTC();
-                    } else {
-                        closeInventory = false;
+                    int x = clan == null ? 18 : 24, y = clan == null ? 72 : 77;
+                    if (cur[0] != x || cur[1] != y) {
+                        goToTTTC(visited);
+                        closeInventory = true;
                     }
                 } else {
-                    goToTTTC();
+                    goToTTTC(visited);
+                    closeInventory = true;
                 }
-                receiveQuest(queue, visited, closeInventory, j == questCount - 1);
-                traveling(queue, "truong thanh tieu.", visited);
+                receiveQuest(queue, visited, closeInventory && clan == null, j == questCount - 1);
+                traveling(queue, visited);
             }
+            goToTTTC(visited);
         } catch (Exception _) {
 
         } finally {
@@ -87,23 +98,88 @@ public class CoLongMulti extends Thread {
         }
     }
 
-    private void goToTTTC() throws InterruptedException, TesseractException {
+    private void goToTTTC(Set<String> visited) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
+        if (clan == null) {
+            goWithFlag();
+        } else {
+            goWithClan(visited);
+        }
+    }
+
+    private void goWithFlag() throws InterruptedException, TesseractException {
+        long start = -20000;
         do {
+            Thread.sleep(500);
+            if (System.currentTimeMillis() - start < 20000) {
+                continue;
+            }
             click(569, 586);
             rightClick(flag);
-        } while (!waitForDialogueBox(20));
-        if (flag[2] == 0) {
-            click(348, 287); // click on toa do
             waitForDialogueBox(20);
-            click(259, 286); // click take me there
-        } else {
-            click(321, 359);
+            if (flag[2] == 0) {
+                click(348, 287); // click on toa do
+                waitForDialogueBox(20);
+                click(259, 286); // click take me there
+            } else {
+                click(321, 359);
+            }
+            start = System.currentTimeMillis();
+        } while (!terminateFlag && !getLocation().contains("truong thanh"));
+    }
+
+    private void goWithClan(Set<String> visited) throws InterruptedException, TesseractException {
+        String location = clan.getLocation();
+        int[] info = clan.getInfo();
+        int[] queue = clan.getQueue();
+        String temp;
+        do {
+            rightClick(375 + clanSkill * 35, 548);
+            Thread.sleep(4000);
+            temp = getLocation().trim();
+        } while (!terminateFlag && (!temp.contains(location) || !isAtLocation(info[0], info[1])));
+        if (!visited.contains(temp)) {
+            closeTutorial();
+            visited.add(temp);
         }
-        while (!getLocation().contains("truong thanh") && !terminateFlag) {
-            Thread.sleep(200);
+
+        click(766, 183);
+        if (!visited.contains("map")) {
+            closeTutorial();
+            visited.add("map");
+        }
+        click(info[2], info[3]);
+        click(766, 183);
+
+        while (!terminateFlag && !isAtLocation(queue[0], queue[1])) {
+            Thread.sleep(500);
+        }
+        do {
+            click(queue[2], queue[3]);
+        } while (!terminateFlag && !waitForDialogueBox(20));
+        click(256, 287);
+
+        while (!terminateFlag && !getLocation().contains("kinh thanh")) {
+            Thread.sleep(500);
+        }
+        if (!visited.contains("kinh thanh.")) {
+            closeTutorial();
+            visited.add("kinh thanh.");
+        }
+
+        click(766, 183);
+        click(102, 421);
+        click(766, 183);
+
+        while (!terminateFlag && !getLocation().contains("truong thanh")){
+            Thread.sleep(500);
+        }
+        Thread.sleep(500);
+        click(171, 240);
+        while (!terminateFlag && !isAtLocation(24, 77)) {
+            Thread.sleep(1000);
         }
     }
 
@@ -111,17 +187,14 @@ public class CoLongMulti extends Thread {
         if (terminateFlag) {
             return;
         }
-        if (closeInventory) {
-            click(569, 586);
-        }
+        if (closeInventory) click(569, 586);
+        int x = clan == null ? 306 : 97, y = clan == null ? 145 : 126;
         do {
-            click(306, 145); // click on NPC
-        } while (!waitForDialogueBox(20));
+            click(x, y); // click on NPC
+        } while (!terminateFlag && !waitForDialogueBox(20));
         click(272, 305); // click on van tieu ca nhan
         waitForDialogueBox(20);
-        if (savePoints) {
-            savePoints();
-        }
+        if (savePoints) savePoints();
         click(285, 344); // click on cap 2
         waitForDialogueBox(20);
         BufferedImage image = captureWindow(224, 257, 355, 40);
@@ -139,7 +212,8 @@ public class CoLongMulti extends Thread {
         startMovement(queue, visited);
     }
 
-    private void traveling(Queue<Dest> queue, String location, Set<String> visited) throws InterruptedException, TesseractException {
+    private void traveling(Queue<Dest> queue, Set<String> visited) throws InterruptedException, TesseractException {
+        String location = "truong thanh tieu.";
         long stillCount = System.currentTimeMillis();
         long finalTime = -1;
         while (!terminateFlag) {
@@ -151,16 +225,16 @@ public class CoLongMulti extends Thread {
                 }
                 stillCount = time;
             } else if (location.contains(queue.peek().dest)) {
-                int[] cur = getCoordinates();
                 long time = System.currentTimeMillis();
-                boolean isInBattle = isInBattle();
-                if (cur[0] == queue.peek().x && cur[1] == queue.peek().y && !isInBattle) {
-                    if (arrived(queue, visited)) return;
-                } else if (queue.peek().methodId == 0 && !isInBattle) {
+                if (isAtLocation(queue.peek().x, queue.peek().y)) {
+                    Thread.sleep(1000);
+                    if (!isInBattle() && arrived(queue, visited)) return;
+                } else if (queue.peek().methodId == 0) {
                     if (finalTime == -1) {
                         finalTime = time;
                     } else if (finalTime == -2) {
-                        if (finishQuest()) return;
+                        Thread.sleep(1000);
+                        if (!isInBattle() && finishQuest()) return;
                     } else if (time - finalTime >= 30000) {
                         click(651, 268);
                         finalTime = -2;
@@ -173,9 +247,9 @@ public class CoLongMulti extends Thread {
                     closeTutorial();
                     visited.add(location);
                 }
-                int[] cur = getCoordinates();
-                if (cur[0] == queue.peek().x && cur[1] == queue.peek().y && !isInBattle()) {
-                    if (arrived(queue, visited)) return;
+                if (isAtLocation(queue.peek().x, queue.peek().y)) {
+                    Thread.sleep(1000);
+                    if (!isInBattle() && arrived(queue, visited)) return;
                 }
                 stillCount = System.currentTimeMillis();
             } else if (System.currentTimeMillis() - stillCount >= 50000) {
@@ -286,11 +360,7 @@ public class CoLongMulti extends Thread {
             return true;
         }
         if (queue.peek().methodId == 0) {
-            Thread.sleep(1000);
             while (!terminateFlag && !finishQuest()) {
-                if (isInBattle()) {
-                    return false;
-                }
                 Thread.sleep(1000);
                 fixFinishQuest();
             }
@@ -327,15 +397,25 @@ public class CoLongMulti extends Thread {
         return false;
     }
 
+    private boolean isAtLocation(int x, int y) throws TesseractException {
+        int[] coords = getCoordinates();
+        return coords[0] == x && coords[1] == y;
+    }
+
     private void getOut(Set<String> visited) throws InterruptedException, TesseractException {
         if (terminateFlag) {
             return;
         }
-        click(730, 443);
-        Thread.sleep(2000);
-        click(651, 432);
+        if (clan != null) {
+            click(752, 512);
+        } else {
+            click(730, 443);
+            Thread.sleep(2000);
+            click(651, 432);
+        }
+
         while (!getLocation().contains("kinh thanh") && !terminateFlag) {
-            Thread.sleep(200);
+            Thread.sleep(500);
         }
         if (!visited.contains("kinh thanh.")) {
             closeTutorial();
@@ -347,9 +427,10 @@ public class CoLongMulti extends Thread {
         if (terminateFlag) {
             return;
         }
-        Thread.sleep(1000);
-        click(131, 229);
-        waitForDialogueBox(20);
+        do {
+            click(131, 229);
+        } while (!terminateFlag && !waitForDialogueBox(20));
+
         click(323, 456);
         while (!getLocation().contains("danh nhan") && !terminateFlag) {
             Thread.sleep(200);
@@ -362,8 +443,9 @@ public class CoLongMulti extends Thread {
             return;
         }
         Thread.sleep(1000);
-        click(557, 287);
-        waitForDialogueBox(20);
+        do {
+            click(557, 287);
+        } while (!terminateFlag && !waitForDialogueBox(20));
         click(259, 286);
     }
 
