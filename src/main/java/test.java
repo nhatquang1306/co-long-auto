@@ -42,7 +42,7 @@ public class test {
         int UID = 1841;
         hwnd = User32.INSTANCE.FindWindow(null, "http://colongonline.com " + username + "[UID: " + UID + "] (Minh Nguyệt-Kênh 1)");
         removeAccountPoints();
-//        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
+        System.out.println(Arrays.toString(getMouseLocation(hwnd)));
 //        System.out.println(Arrays.toString(getCoordinates()));
 //        BufferedImage image = captureWindow(737, 282, 50, 20);
 //        ImageIO.write(image, "png", new File("screenshot.png"));

@@ -28,7 +28,6 @@ public class Fight {
             do {
                 characterAttack();
             } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
-            characterAttack();
             petAttack();
         } else if (color.equals(newbieColor)) {
             int count = 0;

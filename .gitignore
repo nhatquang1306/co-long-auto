@@ -41,4 +41,5 @@ build/
 input/tesseract/clans.ser
 input/tesseract/points.ser
 input/tesseract/points.txt
+src/main/java/test.java
 screenshot.png
