@@ -99,9 +99,7 @@ public class CoLongMulti extends Thread {
     }
 
     private void goToTTTC(Set<String> visited) throws InterruptedException, TesseractException {
-        if (terminateFlag) {
-            return;
-        }
+        if (terminateFlag) return;
         if (clan == null) {
             goWithFlag();
         } else {
@@ -110,10 +108,10 @@ public class CoLongMulti extends Thread {
     }
 
     private void goWithFlag() throws InterruptedException, TesseractException {
-        long start = -20000;
+        long start = -30000;
         do {
             Thread.sleep(500);
-            if (System.currentTimeMillis() - start < 20000) {
+            if (System.currentTimeMillis() - start < 30000) {
                 continue;
             }
             click(569, 586);
@@ -127,7 +125,7 @@ public class CoLongMulti extends Thread {
                 click(321, 359);
             }
             start = System.currentTimeMillis();
-        } while (!terminateFlag && !getLocation().contains("truong thanh"));
+        } while (!terminateFlag && !isAtLocation(18, 72, "truong thanh"));
     }
 
     private void goWithClan(Set<String> visited) throws InterruptedException, TesseractException {
@@ -153,12 +151,14 @@ public class CoLongMulti extends Thread {
         click(info[2], info[3]);
         click(766, 183);
 
+
         while (!terminateFlag && !isAtLocation(queue[0], queue[1])) {
             Thread.sleep(500);
         }
         do {
-            click(queue[2], queue[3]);
+            clickOnNpc(queue[2], queue[3]);
         } while (!terminateFlag && !waitForDialogueBox(20));
+        if (terminateFlag) return;
         click(256, 287);
 
         while (!terminateFlag && !getLocation().contains("kinh thanh")) {
@@ -169,13 +169,17 @@ public class CoLongMulti extends Thread {
             visited.add("kinh thanh.");
         }
 
-        click(766, 183);
-        click(102, 421);
-        click(766, 183);
-
-        while (!terminateFlag && !getLocation().contains("truong thanh")){
+        long start = -50000;
+        do {
+            if (System.currentTimeMillis() - start < 50000) {
+                continue;
+            }
+            click(766, 183);
+            click(102, 421);
+            click(766, 183);
+            start = System.currentTimeMillis();
             Thread.sleep(500);
-        }
+        } while (!terminateFlag && !getLocation().contains("truong thanh"));
         Thread.sleep(500);
         click(171, 240);
         while (!terminateFlag && !isAtLocation(24, 77)) {
@@ -184,28 +188,33 @@ public class CoLongMulti extends Thread {
     }
 
     private void receiveQuest(Queue<Dest> queue, Set<String> visited, boolean closeInventory, boolean savePoints) throws InterruptedException, TesseractException {
-        if (terminateFlag) {
-            return;
-        }
+        if (terminateFlag) return;
         if (closeInventory) click(569, 586);
-        int x = clan == null ? 306 : 97, y = clan == null ? 145 : 126;
+        int npcX = clan == null ? 306 : 97, npcY = clan == null ? 145 : 126;
+        int locationX = clan == null ? 18 : 24, locationY = clan == null ? 72 : 77;
         do {
-            click(x, y); // click on NPC
+            if (!isAtLocation(locationX, locationY)) {
+                System.out.println("moved to wrong location");
+                if (clan == null) {
+                    goWithFlag();
+                    click(569, 586);
+                }
+                else goWithClan(visited);
+            }
+            clickOnNpc(npcX, npcY);
         } while (!terminateFlag && !waitForDialogueBox(20));
         click(272, 305); // click on van tieu ca nhan
         waitForDialogueBox(20);
         if (savePoints) savePoints();
         click(285, 344); // click on cap 2
-        waitForDialogueBox(20);
+        waitForDialogueBox(30);
         BufferedImage image = captureWindow(224, 257, 355, 40);
         click(557, 266);
         parseDestination(queue, tesseract.doOCR(image), visited);
     }
 
     private void parseDestination(Queue<Dest> queue, String destination, Set<String> visited) throws TesseractException, InterruptedException {
-        if (terminateFlag) {
-            return;
-        }
+        if (terminateFlag) return;
         if (SwitchStatements.parseDestination(destination, queue)) {
             getOut(visited);
         }
@@ -235,7 +244,7 @@ public class CoLongMulti extends Thread {
                     } else if (finalTime == -2) {
                         Thread.sleep(1000);
                         if (!isInBattle() && finishQuest()) return;
-                    } else if (time - finalTime >= 30000) {
+                    } else if (time - finalTime >= 40000) {
                         click(651, 268);
                         finalTime = -2;
                     }
@@ -267,9 +276,7 @@ public class CoLongMulti extends Thread {
     }
 
     private void startMovement(Queue<Dest> queue, Set<String> visited) throws InterruptedException, TesseractException {
-        if (terminateFlag) {
-            return;
-        }
+        if (terminateFlag) return;
         Dest dest = queue.peek();
         switch (dest.methodId) {
             case -1:
@@ -297,9 +304,7 @@ public class CoLongMulti extends Thread {
     }
 
     private void handleIdling(Set<String> visited, String location, int x) throws InterruptedException, TesseractException {
-        if (terminateFlag) {
-            return;
-        }
+        if (terminateFlag) return;
         // special map case because you can't open medium map
         if (location.equals("thanh y lau-tang.")) {
             click(383, 350);
@@ -320,7 +325,7 @@ public class CoLongMulti extends Thread {
         int turn = 0;
         while (!terminateFlag && isInBattle()) {
             // wait until the turn is started
-            while (!terminateFlag && !getPixelColor(378, 90).equals(white) || getPixelColor(405, 325).equals(white)) {
+            while (!terminateFlag && (!getPixelColor(378, 90).equals(white) || getPixelColor(405, 325).equals(white))) {
                 if (!isInBattle()) return;
                 Thread.sleep(200);
             }
@@ -356,11 +361,13 @@ public class CoLongMulti extends Thread {
     }
 
     private boolean arrived(Queue<Dest> queue, Set<String> visited) throws TesseractException, InterruptedException {
-        if (terminateFlag) {
-            return true;
-        }
+        if (terminateFlag) return true;
         if (queue.peek().methodId == 0) {
+            long start = System.currentTimeMillis();
             while (!terminateFlag && !finishQuest()) {
+                if (System.currentTimeMillis() - start >= 30000) {
+                    return false;
+                }
                 Thread.sleep(1000);
                 fixFinishQuest();
             }
@@ -373,28 +380,29 @@ public class CoLongMulti extends Thread {
     }
 
     private void fixFinishQuest() throws InterruptedException, TesseractException {
-        if (terminateFlag) {
-            return;
-        }
+        if (terminateFlag) return;
         int[] cur = getCoordinates();
-        click(SwitchStatements.fixFinishQuest(cur[0], cur[1]));
+        clickOnNpc(SwitchStatements.fixFinishQuest(cur[0], cur[1]));
     }
 
     private boolean finishQuest() throws TesseractException, InterruptedException {
-        if (terminateFlag) {
-            return true;
-        }
+        if (terminateFlag) return true;
         int[] arr = new int[]{296, 314, 278, 332};
         for (int i = 0; i < 4 && !terminateFlag; i++) {
             BufferedImage image = captureWindow(223, arr[i], 70, 20);
             if (removeDiacritics(tesseract.doOCR(image)).contains("van tieu")) {
                 click(251, arr[i] + 10);
-                waitForDialogueBox(20);
+                waitForDialogueBox(30);
                 click(557, 266); // click on final text box;
                 return true;
             }
         }
         return false;
+    }
+
+    private boolean isAtLocation(int x, int y, String location) throws TesseractException {
+        int[] coords = getCoordinates();
+        return coords[0] == x && coords[1] == y && getLocation().contains(location);
     }
 
     private boolean isAtLocation(int x, int y) throws TesseractException {
@@ -403,20 +411,21 @@ public class CoLongMulti extends Thread {
     }
 
     private void getOut(Set<String> visited) throws InterruptedException, TesseractException {
-        if (terminateFlag) {
-            return;
-        }
-        if (clan != null) {
-            click(752, 512);
-        } else {
+        if (terminateFlag) return;
+        int x = clan != null ? 752 : 651, y = clan != null ? 512 : 432;
+        if (clan == null) {
             click(730, 443);
             Thread.sleep(2000);
-            click(651, 432);
         }
-
-        while (!getLocation().contains("kinh thanh") && !terminateFlag) {
+        long start = -30000;
+        do {
+            if (System.currentTimeMillis() - start < 30000) {
+                continue;
+            }
+            click(x, y);
+            start = System.currentTimeMillis();
             Thread.sleep(500);
-        }
+        } while (!terminateFlag && !getLocation().contains("kinh thanh"));
         if (!visited.contains("kinh thanh.")) {
             closeTutorial();
             visited.add("kinh thanh.");
@@ -424,11 +433,9 @@ public class CoLongMulti extends Thread {
     }
 
     private void goToTVD() throws InterruptedException, TesseractException {
-        if (terminateFlag) {
-            return;
-        }
+        if (terminateFlag) return;
         do {
-            click(131, 229);
+            clickOnNpc(131, 229);
         } while (!terminateFlag && !waitForDialogueBox(20));
 
         click(323, 456);
@@ -439,12 +446,10 @@ public class CoLongMulti extends Thread {
     }
 
     private void goToHTT() throws InterruptedException {
-        if (terminateFlag) {
-            return;
-        }
+        if (terminateFlag) return;
         Thread.sleep(1000);
         do {
-            click(557, 287);
+            clickOnNpc(555, 279);
         } while (!terminateFlag && !waitForDialogueBox(20));
         click(259, 286);
     }
@@ -639,7 +644,25 @@ public class CoLongMulti extends Thread {
             long y = Math.round((b - 26) * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
             User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
+            Thread.sleep(200);
+            User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONDOWN, new WPARAM(WinUser.MK_LBUTTON), lParam);
+            Thread.sleep(100);
+            User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
             Thread.sleep(300);
+        }
+    }
+
+    public void clickOnNpc(int a, int b) throws InterruptedException {
+        synchronized (lock) {
+            long x = Math.round((a - 3) * scale);
+            long y = Math.round((b - 26) * scale);
+            LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
+            Color color = getPixelColor(a, b);
+            int count = 0;
+            do {
+                User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
+                Thread.sleep(200);
+            } while (!terminateFlag && count++ < 5 && getPixelColor(a, b).equals(color));
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONDOWN, new WPARAM(WinUser.MK_LBUTTON), lParam);
             Thread.sleep(100);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_LBUTTONUP, new WPARAM(0), lParam);
@@ -653,7 +676,7 @@ public class CoLongMulti extends Thread {
             long y = Math.round((b - 26) * scale);
             LPARAM lParam = new LPARAM((y << 16) | (x & 0xFFFF));
             User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
-            Thread.sleep(300);
+            Thread.sleep(200);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONDOWN, new WPARAM(WinUser.MK_RBUTTON), lParam);
             Thread.sleep(100);
             User32.INSTANCE.SendMessage(handle, WinUser.WM_RBUTTONUP, new WPARAM(0), lParam);
@@ -662,6 +685,10 @@ public class CoLongMulti extends Thread {
     }
 
     private void click(int[] arr) throws InterruptedException {
+        click(arr[0], arr[1]);
+    }
+
+    private void clickOnNpc(int[] arr) throws InterruptedException {
         click(arr[0], arr[1]);
     }
 
