@@ -1,7 +1,6 @@
 import net.sourceforge.tess4j.TesseractException;
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
 
 public class Fight {
     private static final Color everyColor1 = new Color(239, 239, 15);
@@ -27,17 +26,17 @@ public class Fight {
             int count = 0;
             do {
                 characterAttack();
-            } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
+            } while (count++ < 1 && !parent.waitForPetPrompt(7));
             petAttack();
         } else if (color.equals(newbieColor)) {
             int count = 0;
             do {
                 newbieAttack();
-            } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
+            } while (count++ < 1 && !parent.waitForPetPrompt(7));
             petDefense();
         } else if (color.equals(petColor)) {
             defense();
-            parent.waitForDefensePrompt(2, 10);
+            parent.waitForPetPrompt(10);
             if (turn == 0) petAttack();
             else parent.clickOnNpc(231, 201);
         } else if (color.equals(characterColor1) || color.equals(characterColor2)) {
@@ -45,15 +44,15 @@ public class Fight {
             do {
                 if (turn == 0) characterAttack();
                 else parent.clickOnNpc(231, 201);
-            } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
+            } while (count++ < 1 && !parent.waitForPetPrompt(7));
             petDefense();
         } else if (r >= 154 && r <= 178 && g >= 191 && g <= 228 && b >= 85 && b <= 121) {
             defense();
-            parent.waitForDefensePrompt(2, 10);
+            parent.waitForPetPrompt(10);
             parent.clickOnNpc(231, 201);
         } else {
             defense();
-            parent.waitForDefensePrompt(2, 10);
+            parent.waitForPetPrompt(10);
             petDefense();
         }
     }

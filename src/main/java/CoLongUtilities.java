@@ -6,7 +6,6 @@ import com.sun.jna.win32.StdCallLibrary;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -23,6 +22,8 @@ public abstract class CoLongUtilities {
     public String username;
     public static final Color black = new Color(0, 0, 0);
     public static final Color white = new Color(254, 254, 254);
+    public static final Color moveBar = new Color(81, 71, 34);
+    public static final Color petMoveBar = new Color(49, 41, 15);
     public static final int[][] colorCoords = new int[][] {{1, 1}, {1, 4}, {2, 7}, {3, 1}, {5, 1}, {5, 8}};
     public static final Map<Integer, Integer> colorHashes = new HashMap<>();
     public static final int[] colorDistances = new int[] {6, 8, 8, 7, 7, 7, 7, 9, 6, 7};
@@ -53,13 +54,11 @@ public abstract class CoLongUtilities {
         }
     }
 
-    public boolean waitForDefensePrompt(int person, int limit) throws TesseractException, InterruptedException {
+    public boolean waitForPetPrompt(int limit) throws InterruptedException {
         long start = System.currentTimeMillis();
         limit *= 1000;
         while (System.currentTimeMillis() - start < limit && !terminateFlag) {
-            BufferedImage image = captureWindow(737, person == 1 ? 282 : 239, 50, 20);
-            String str = removeDiacritics(tesseract.doOCR(image));
-            if (str.contains("thu")) {
+            if (getPixelColor(746, 229).equals(petMoveBar)) {
                 return true;
             }
             Thread.sleep(200);

@@ -290,13 +290,15 @@ public class CoLong extends CoLongUtilities {
         int turn = 0;
         while (!terminateFlag && isInBattle()) {
             // wait until the turn is started
-            while (!terminateFlag && (!getPixelColor(378, 90).equals(white) || getPixelColor(405, 325).equals(white))) {
+            while (!terminateFlag && !getPixelColor(782, 380).equals(moveBar)) {
                 if (!isInBattle()) return;
                 Thread.sleep(200);
             }
             if ((turn == 1 || turn == 2) && waitForDialogueBox(2)) {
                 click(557, 266);
-                waitForDefensePrompt(1, 10);
+                while (!terminateFlag && !getPixelColor(782, 380).equals(moveBar)) {
+                    Thread.sleep(200);
+                }
             } else {
                 // move mouse out the way
                 mouseMove(270, 566);
@@ -383,10 +385,22 @@ public class CoLong extends CoLongUtilities {
         do {
             if (!isAtLocation(173, 164)) {
                 useMap(visited, 491, 227);
-                continue;
+                long start = System.currentTimeMillis();
+                while (!terminateFlag && !isAtLocation(173, 164)) {
+                    long time = System.currentTimeMillis();
+                    if (isInBattle()) {
+                        progressMatch();
+                        start = time;
+                    } else if (time - start >= 30000) {
+                        useMap(visited, 491, 227);
+                        start = time;
+                    }
+                    Thread.sleep(500);
+                }
+                Thread.sleep(1000);
             }
             clickOnNpc(131, 229);
-        } while (!terminateFlag && !waitForDialogueBox(20));
+        } while (!terminateFlag && !waitForDialogueBox(10));
 
         click(323, 456);
         while (!getLocation().contains("danh nhan") && !terminateFlag) {
