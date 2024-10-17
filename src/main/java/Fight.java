@@ -13,9 +13,9 @@ public class Fight {
     private final int skill;
     private final int newbie;
     private final int pet;
-    private final CoLongMulti parent;
+    private final CoLong parent;
 
-    public Fight(int skill, int newbie, int pet, CoLongMulti parent) {
+    public Fight(int skill, int newbie, int pet, CoLong parent) {
         this.skill = skill;
         this.newbie = newbie;
         this.pet = pet;
@@ -27,14 +27,12 @@ public class Fight {
             int count = 0;
             do {
                 characterAttack();
-                if (count == 1) System.out.println("misclick in fight");
             } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
             petAttack();
         } else if (color.equals(newbieColor)) {
             int count = 0;
             do {
                 newbieAttack();
-                if (count == 1) System.out.println("misclick in fight");
             } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
             petDefense();
         } else if (color.equals(petColor)) {
@@ -47,7 +45,6 @@ public class Fight {
             do {
                 if (turn == 0) characterAttack();
                 else parent.clickOnNpc(231, 201);
-                if (count == 1) System.out.println("misclick in fight");
             } while (count++ < 1 && !parent.waitForDefensePrompt(2, 7));
             petDefense();
         } else if (r >= 154 && r <= 178 && g >= 191 && g <= 228 && b >= 85 && b <= 121) {
@@ -55,7 +52,6 @@ public class Fight {
             parent.waitForDefensePrompt(2, 10);
             parent.clickOnNpc(231, 201);
         } else {
-            if (turn == 0) System.out.println(color);
             defense();
             parent.waitForDefensePrompt(2, 10);
             petDefense();

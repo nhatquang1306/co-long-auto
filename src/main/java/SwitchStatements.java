@@ -9,7 +9,7 @@ public class SwitchStatements {
                 char c3 = destination.charAt(index + 1);
                 if (c3 == 'u') { // cung to to
                     res = true;
-                    queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
+                    queue.offer(new Dest(491, 227, 173, 164, "kinh thanh"));
                     queue.offer(new Dest(2));
                     queue.offer(new Dest(3));
                     queue.offer(new Dest(57, 48, "hoang thach"));
@@ -19,7 +19,7 @@ public class SwitchStatements {
                 break;
             case 'L': // ly than dong
                 res = true;
-                queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
+                queue.offer(new Dest(491, 227, 173, 164, "kinh thanh"));
                 queue.offer(new Dest(2));
                 queue.offer(new Dest(3));
                 queue.offer(new Dest(623, 264, 10, 307, "luc thuy"));
@@ -29,7 +29,7 @@ public class SwitchStatements {
                 char c2 = destination.charAt(index + 3);
                 if (c2 == 'm') { // tram lang
                     res = true;
-                    queue.offer(new Dest(472, 227, 173, 164, "kinh thanh"));
+                    queue.offer(new Dest(491, 227, 173, 164, "kinh thanh"));
                     queue.offer(new Dest(2));
                     queue.offer(new Dest(74, 86, "vo danh"));
                 } else if (c2 == 't') { // tiet dai han

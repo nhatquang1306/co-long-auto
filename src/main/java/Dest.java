@@ -18,6 +18,7 @@ public class Dest {
             this.dest = "hoang thach";
         }
     }
+
     public Dest(int x, int y, String dest) {
         this.methodId = 0;
         this.mapX = -1;
@@ -26,6 +27,7 @@ public class Dest {
         this.y = y;
         this.dest = dest;
     }
+
     public Dest(int mapX, int mapY, int x, int y, String dest) {
         this.methodId = -1;
         this.mapX = mapX;

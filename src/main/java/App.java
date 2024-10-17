@@ -294,7 +294,7 @@ public class App {
             String clan = clanButtons[i].getText();
             Pair pair = handleMap.get(UID);
 
-            CoLongMulti coLong = new CoLongMulti(questCount, skill, newbie, pet, clanSkill, clan, startButtons[i], pair.handle, pair.username);
+            CoLong coLong = new CoLong(questCount, skill, newbie, pet, clanSkill, clan, startButtons[i], pair.handle, pair.username);
             startButtons[i].setEnabled(false);
             ActionListener actionListener = new ActionListener() {
                 @Override
@@ -312,7 +312,7 @@ public class App {
 
                 }
             }
-            coLong.start();
+            new Thread(coLong::run).start();
         } catch (NumberFormatException _) {
             uidFields[i].setText("");
             questCountFields[i].setText("10");
