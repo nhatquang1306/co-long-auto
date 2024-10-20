@@ -160,9 +160,11 @@ public class CoLong extends CoLongUtilities {
         }
     }
 
+    // click on npc to receive quest
     private void receiveQuest(Queue<Dest> queue, Set<String> visited, boolean closeInventory, boolean savePoints) throws InterruptedException, TesseractException {
         if (terminateFlag) return;
         if (closeInventory) click(569, 586);
+        // where to click depends on how the user got there
         int npcX = clan == null ? 306 : 97, npcY = clan == null ? 145 : 126;
         int locationX = clan == null ? 18 : 24, locationY = clan == null ? 72 : 77;
         do {
@@ -179,11 +181,13 @@ public class CoLong extends CoLongUtilities {
         if (savePoints) savePoints();
         click(285, 344); // click on cap 2
         waitForDialogueBox(30);
+        // capture image to parse destination
         BufferedImage image = captureWindow(224, 257, 355, 40);
         click(557, 266);
         parseDestination(queue, tesseract.doOCR(image), visited);
     }
 
+    // parse where to go using text recognition
     private void parseDestination(Queue<Dest> queue, String destination, Set<String> visited) throws TesseractException, InterruptedException {
         if (terminateFlag) return;
         if (SwitchStatements.parseDestination(destination, queue)) {
@@ -197,19 +201,20 @@ public class CoLong extends CoLongUtilities {
         long stillCount = System.currentTimeMillis();
         long finalTime = -1;
         while (!terminateFlag) {
-            if (isInBattle()) {
+            if (isInBattle()) { // when user is in battle
                 progressMatch();
                 long time = System.currentTimeMillis();
                 if (finalTime > -1) {
                     finalTime = time;
                 }
                 stillCount = time;
-            } else if (location.contains(queue.peek().dest)) {
+            } else if (location.contains(queue.peek().dest)) { // when user is at the final location
                 long time = System.currentTimeMillis();
                 if (isAtLocation(queue.peek().x, queue.peek().y)) {
                     Thread.sleep(1000);
                     if (!isInBattle() && arrived(queue, visited)) return;
                 } else if (queue.peek().methodId == 0) {
+                    // fix for when the user is at the final location for too long
                     if (finalTime == -1) {
                         finalTime = time;
                     } else if (finalTime == -2) {
@@ -223,7 +228,7 @@ public class CoLong extends CoLongUtilities {
                     useMap(visited, queue.peek().mapX, queue.peek().mapY);
                     stillCount = time;
                 }
-            } else if (!getLocation().trim().equals(location)) {
+            } else if (!getLocation().trim().equals(location)) { // when the user is at a new location
                 location = getLocation().trim();
                 if (!visited.contains(location)) {
                     closeTutorial();
@@ -234,7 +239,7 @@ public class CoLong extends CoLongUtilities {
                     if (!isInBattle() && arrived(queue, visited)) return;
                 }
                 stillCount = System.currentTimeMillis();
-            } else if (System.currentTimeMillis() - stillCount >= 50000) {
+            } else if (System.currentTimeMillis() - stillCount >= 50000) { // when the user is idle for too long
                 if (queue.peek().methodId == -1) {
                     useMap(visited, queue.peek().mapX, queue.peek().mapY);
                 } else if (queue.peek().methodId == 0) {
@@ -246,6 +251,7 @@ public class CoLong extends CoLongUtilities {
         }
     }
 
+    // decide next thing to do
     private void startMovement(Queue<Dest> queue, Set<String> visited) throws InterruptedException, TesseractException {
         if (terminateFlag) return;
         Dest dest = queue.peek();
@@ -268,6 +274,7 @@ public class CoLong extends CoLongUtilities {
         }
     }
 
+    // method for when staying in 1 spot for too long
     private void handleIdling(Set<String> visited, String location, int x) throws InterruptedException, TesseractException {
         if (terminateFlag) return;
         // special map case because you can't open medium map
@@ -288,25 +295,30 @@ public class CoLong extends CoLongUtilities {
 
     private void progressMatch() throws InterruptedException, TesseractException {
         int turn = 0;
+        boolean clickedTutorial = false;
         while (!terminateFlag && isInBattle()) {
+            // check for tutorial dialogue
+            if (!clickedTutorial && (turn == 1 || turn == 2)) {
+                while (!terminateFlag && !getPixelColor(378, 90).equals(white)) {
+                    if (!isInBattle()) return;
+                    Thread.sleep(200);
+                }
+                if (waitForDialogueBox(2)) {
+                    click(557, 266);
+                    clickedTutorial = true;
+                }
+            }
             // wait until the turn is started
             while (!terminateFlag && !getPixelColor(782, 380).equals(moveBar)) {
                 if (!isInBattle()) return;
                 Thread.sleep(200);
             }
-            if ((turn == 1 || turn == 2) && waitForDialogueBox(2)) {
-                click(557, 266);
-                while (!terminateFlag && !getPixelColor(782, 380).equals(moveBar)) {
-                    Thread.sleep(200);
-                }
-            } else {
-                // move mouse out the way
-                mouseMove(270, 566);
-            }
+            // move mouse out the way
+            mouseMove(270, 566);
             Color color = getPixelColor(231, 201);
             fight.execute(color, turn);
             // wait until the current turn is over
-            while (!terminateFlag && getPixelColor(378, 90).equals(white) || getPixelColor(405, 325).equals(white)) {
+            while (!terminateFlag && (getPixelColor(378, 90).equals(white) || getPixelColor(405, 325).equals(white))) {
                 Thread.sleep(200);
             }
             turn++;
@@ -317,6 +329,7 @@ public class CoLong extends CoLongUtilities {
         if (terminateFlag) return true;
         if (queue.peek().methodId == 0) {
             long start = System.currentTimeMillis();
+            // click on npc until quest can be finished
             while (!terminateFlag && !finishQuest()) {
                 if (System.currentTimeMillis() - start >= 30000) {
                     return false;
@@ -332,6 +345,7 @@ public class CoLong extends CoLongUtilities {
         }
     }
 
+    // method for when quest gets error
     private void fixFinishQuest() throws InterruptedException, TesseractException {
         if (terminateFlag) return;
         int[] cur = getCoordinates();
@@ -341,6 +355,7 @@ public class CoLong extends CoLongUtilities {
     private boolean finishQuest() throws TesseractException, InterruptedException {
         if (terminateFlag) return true;
         int[] arr = new int[]{296, 314, 278, 332};
+        // go through each line of dialogue box to look for 'van tieu'
         for (int i = 0; i < 4 && !terminateFlag; i++) {
             BufferedImage image = captureWindow(223, arr[i], 70, 20);
             if (removeDiacritics(tesseract.doOCR(image)).contains("van tieu")) {
@@ -353,6 +368,7 @@ public class CoLong extends CoLongUtilities {
         return false;
     }
 
+    // method for getting out of truong thanh tieu cuc
     private void getOut(Set<String> visited) throws InterruptedException, TesseractException {
         if (terminateFlag) return;
         if (clan == null) {
@@ -380,12 +396,14 @@ public class CoLong extends CoLongUtilities {
         }
     }
 
+    // go to TVD through BKP
     private void goToTVD(Set<String> visited) throws InterruptedException, TesseractException {
         if (terminateFlag) return;
         do {
             if (!isAtLocation(173, 164)) {
                 useMap(visited, 491, 227);
                 long start = System.currentTimeMillis();
+                // go back if not at correct location
                 while (!terminateFlag && !isAtLocation(173, 164)) {
                     long time = System.currentTimeMillis();
                     if (isInBattle()) {
@@ -409,6 +427,7 @@ public class CoLong extends CoLongUtilities {
         click(787, 480);
     }
 
+    // go to HTT through TVD
     private void goToHTT() throws InterruptedException {
         if (terminateFlag) return;
         Thread.sleep(1000);
