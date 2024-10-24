@@ -43,7 +43,7 @@ public class CoLong extends CoLongUtilities {
         this.startButton = startButton;
 
         this.tesseract = new Tesseract();
-        this.tesseract.setDatapath("input/tesseract/tessdata");
+        this.tesseract.setDatapath("app/tesseract/tessdata");
         this.tesseract.setLanguage("vie");
     }
 
@@ -57,7 +57,7 @@ public class CoLong extends CoLongUtilities {
             visited.add("truong thanh tieu.");
             visited.add("thanh dan.");
             for (int j = 0; j < questCount; j++) {
-                Queue<Dest> queue = new LinkedList<>();
+                Deque<Dest> deque = new ArrayDeque<>();
                 boolean closeInventory = false;
                 if (j == 0 && getLocation().trim().equals("truong thanh tieu.")) {
                     int[] cur = getCoordinates();
@@ -70,8 +70,8 @@ public class CoLong extends CoLongUtilities {
                     goToTTTC(visited);
                     closeInventory = true;
                 }
-                receiveQuest(queue, visited, closeInventory && clan == null, j == questCount - 1);
-                traveling(queue, visited);
+                receiveQuest(deque, visited, closeInventory && clan == null, j == questCount - 1);
+                traveling(deque, visited);
             }
             goToTTTC(visited);
         } catch (Exception _) {
@@ -115,27 +115,38 @@ public class CoLong extends CoLongUtilities {
     private void goWithClan(Set<String> visited) throws InterruptedException, TesseractException {
         String location = clan.getLocation();
         int[] info = clan.getInfo();
-        String temp;
-        do {
+        String temp = getLocation().trim();
+        // transport back to clan
+        while (!terminateFlag && !temp.contains(location)) {
             rightClick(375 + clanSkill * 35, 548);
             Thread.sleep(4000);
             temp = getLocation().trim();
-        } while (!terminateFlag && (!temp.contains(location) || !isAtLocation(info[0], info[1])));
+        }
         if (!visited.contains(temp)) {
             closeTutorial();
             visited.add(temp);
         }
 
-        useMap(visited, info[2], info[3]);
-        while (!terminateFlag && !isAtLocation(info[4], info[5])) {
-            Thread.sleep(500);
-        }
+        // go to clan npc
+        long start = -20000;
+        int limit = 1;
         do {
-            clickOnNpc(info[6], info[7]);
-        } while (!terminateFlag && !waitForDialogueBox(20));
+            if (!isAtLocation(info[2], info[3])) {
+                if (System.currentTimeMillis() - start < 20000) continue;
+                useMap(visited, info[0], info[1]);
+                limit = 1;
+                start = System.currentTimeMillis();
+            } else {
+                Thread.sleep(1000);
+                clickOnNpc(info[4], info[5]);
+                limit = 20;
+                start = -20000;
+            }
+        } while (!terminateFlag && !waitForDialogueBox(limit));
+
+        // go to KT
         if (terminateFlag) return;
         click(256, 287);
-
         while (!terminateFlag && !getLocation().contains("kinh thanh")) {
             Thread.sleep(500);
         }
@@ -144,7 +155,8 @@ public class CoLong extends CoLongUtilities {
             visited.add("kinh thanh.");
         }
 
-        long start = -50000;
+        // go to tttc
+        start = -50000;
         do {
             if (System.currentTimeMillis() - start < 50000) {
                 continue;
@@ -161,7 +173,7 @@ public class CoLong extends CoLongUtilities {
     }
 
     // click on npc to receive quest
-    private void receiveQuest(Queue<Dest> queue, Set<String> visited, boolean closeInventory, boolean savePoints) throws InterruptedException, TesseractException {
+    private void receiveQuest(Deque<Dest> deque, Set<String> visited, boolean closeInventory, boolean savePoints) throws InterruptedException, TesseractException {
         if (terminateFlag) return;
         if (closeInventory) click(569, 586);
         // where to click depends on how the user got there
@@ -184,49 +196,40 @@ public class CoLong extends CoLongUtilities {
         // capture image to parse destination
         BufferedImage image = captureWindow(224, 257, 355, 40);
         click(557, 266);
-        parseDestination(queue, tesseract.doOCR(image), visited);
+        parseDestination(deque, tesseract.doOCR(image), visited);
     }
 
     // parse where to go using text recognition
-    private void parseDestination(Queue<Dest> queue, String destination, Set<String> visited) throws TesseractException, InterruptedException {
+    private void parseDestination(Deque<Dest> deque, String destination, Set<String> visited) throws TesseractException, InterruptedException {
         if (terminateFlag) return;
-        if (SwitchStatements.parseDestination(destination, queue)) {
+        if (SwitchStatements.parseDestination(destination, deque)) {
             getOut(visited);
         }
-        startMovement(queue, visited);
+        startMovement(deque, visited);
     }
 
-    private void traveling(Queue<Dest> queue, Set<String> visited) throws InterruptedException, TesseractException {
+    private void traveling(Deque<Dest> deque, Set<String> visited) throws InterruptedException, TesseractException {
         String location = "truong thanh tieu.";
-        long stillCount = System.currentTimeMillis();
-        long finalTime = -1;
+        long idleTime = System.currentTimeMillis();
         while (!terminateFlag) {
             if (isInBattle()) { // when user is in battle
                 progressMatch();
+                idleTime = System.currentTimeMillis();
+            } else if (location.contains(deque.peek().dest)) { // when user is at the final location
                 long time = System.currentTimeMillis();
-                if (finalTime > -1) {
-                    finalTime = time;
-                }
-                stillCount = time;
-            } else if (location.contains(queue.peek().dest)) { // when user is at the final location
-                long time = System.currentTimeMillis();
-                if (isAtLocation(queue.peek().x, queue.peek().y)) {
+                if (deque.peek().methodId == 0) {
+                    destinationMethod(deque.peek().x, deque.peek().y);
+                    return;
+                } else if (isAtLocation(deque.peek().x, deque.peek().y)) {
                     Thread.sleep(1000);
-                    if (!isInBattle() && arrived(queue, visited)) return;
-                } else if (queue.peek().methodId == 0) {
-                    // fix for when the user is at the final location for too long
-                    if (finalTime == -1) {
-                        finalTime = time;
-                    } else if (finalTime == -2) {
-                        Thread.sleep(1000);
-                        if (!isInBattle() && finishQuest()) return;
-                    } else if (time - finalTime >= 40000) {
-                        click(651, 268);
-                        finalTime = -2;
+                    if (isInBattle()) continue;
+                    Dest temp = deque.poll();
+                    if (!startMovement(deque, visited)) {
+                        deque.push(temp);
                     }
-                } else if (time - stillCount >= 50000) {
-                    useMap(visited, queue.peek().mapX, queue.peek().mapY);
-                    stillCount = time;
+                } else if (time - idleTime >= 50000) {
+                    useMap(visited, deque.peek().mapX, deque.peek().mapY);
+                    idleTime = time;
                 }
             } else if (!getLocation().trim().equals(location)) { // when the user is at a new location
                 location = getLocation().trim();
@@ -234,44 +237,35 @@ public class CoLong extends CoLongUtilities {
                     closeTutorial();
                     visited.add(location);
                 }
-                if (isAtLocation(queue.peek().x, queue.peek().y)) {
-                    Thread.sleep(1000);
-                    if (!isInBattle() && arrived(queue, visited)) return;
+                idleTime = System.currentTimeMillis();
+            } else if (System.currentTimeMillis() - idleTime >= 50000) { // when the user is idle for too long
+                if (deque.peek().methodId == -1) {
+                    useMap(visited, deque.peek().mapX, deque.peek().mapY);
+                } else if (deque.peek().methodId == 0) {
+                    handleIdling(visited, location, deque.peek().x);
                 }
-                stillCount = System.currentTimeMillis();
-            } else if (System.currentTimeMillis() - stillCount >= 50000) { // when the user is idle for too long
-                if (queue.peek().methodId == -1) {
-                    useMap(visited, queue.peek().mapX, queue.peek().mapY);
-                } else if (queue.peek().methodId == 0) {
-                    handleIdling(visited, location, queue.peek().x);
-                }
-                stillCount = System.currentTimeMillis();
+                idleTime = System.currentTimeMillis();
             }
             Thread.sleep(200);
         }
     }
 
     // decide next thing to do
-    private void startMovement(Queue<Dest> queue, Set<String> visited) throws InterruptedException, TesseractException {
-        if (terminateFlag) return;
-        Dest dest = queue.peek();
-        switch (dest.methodId) {
-            case -1:
-                useMap(visited, dest.mapX, dest.mapY);
-                break;
-            case 0:
-                click(651, 268);
-                break;
-            case 2:
-                goToTVD(visited);
-                dest.methodId = -1;
-                break;
-            case 3:
-                goToHTT();
-                break;
-            default:
-                break;
+    private boolean startMovement(Deque<Dest> deque, Set<String> visited) throws InterruptedException, TesseractException {
+        if (terminateFlag) return true;
+        Dest dest = deque.peek();
+        if (dest.methodId == -1) {
+            useMap(visited, dest.mapX, dest.mapY);
+        } else if (dest.methodId == 0) {
+            click(651, 268);
+        } else if (dest.methodId == 2) {
+            boolean arrived = goToTVD();
+            if (arrived) dest.methodId = -1;
+            return arrived;
+        } else {
+            goToHTT();
         }
+        return true;
     }
 
     // method for when staying in 1 spot for too long
@@ -325,23 +319,36 @@ public class CoLong extends CoLongUtilities {
         }
     }
 
-    private boolean arrived(Queue<Dest> queue, Set<String> visited) throws TesseractException, InterruptedException {
-        if (terminateFlag) return true;
-        if (queue.peek().methodId == 0) {
-            long start = System.currentTimeMillis();
-            // click on npc until quest can be finished
-            while (!terminateFlag && !finishQuest()) {
-                if (System.currentTimeMillis() - start >= 30000) {
-                    return false;
-                }
+    private void destinationMethod(int x, int y) throws TesseractException, InterruptedException {
+        long idleTime = System.currentTimeMillis();
+        boolean clickedText = false;
+        int limit = 30000;
+        while (!terminateFlag) {
+            if (isInBattle()) {
+                progressMatch();
+                idleTime = System.currentTimeMillis();
+            } else if (isAtLocation(x, y)) {
                 Thread.sleep(1000);
-                fixFinishQuest();
+                if (isInBattle()) continue;
+                while (!terminateFlag && !finishQuest() && isAtLocation(x, y)) {
+                    fixFinishQuest();
+                    Thread.sleep(1000);
+                }
+                return;
+            } else if (clickedText) {
+                if (hasDialogueBox() && finishQuest()) {
+                    return;
+                } else if (System.currentTimeMillis() - idleTime >= 30000) {
+                    clickRandomLocation(240, 380, 230, 170);
+                    clickedText = false;
+                    idleTime = System.currentTimeMillis();
+                }
+            } else if (System.currentTimeMillis() - idleTime >= limit) {
+                click(651, 268);
+                clickedText = true;
+                limit = 7000;
+                idleTime = System.currentTimeMillis();
             }
-            return true;
-        } else {
-            queue.poll();
-            startMovement(queue, visited);
-            return false;
         }
     }
 
@@ -397,40 +404,26 @@ public class CoLong extends CoLongUtilities {
     }
 
     // go to TVD through BKP
-    private void goToTVD(Set<String> visited) throws InterruptedException, TesseractException {
-        if (terminateFlag) return;
+    private boolean goToTVD() throws InterruptedException, TesseractException {
+        if (terminateFlag) return true;
         do {
             if (!isAtLocation(173, 164)) {
-                useMap(visited, 491, 227);
-                long start = System.currentTimeMillis();
-                // go back if not at correct location
-                while (!terminateFlag && !isAtLocation(173, 164)) {
-                    long time = System.currentTimeMillis();
-                    if (isInBattle()) {
-                        progressMatch();
-                        start = time;
-                    } else if (time - start >= 30000) {
-                        useMap(visited, 491, 227);
-                        start = time;
-                    }
-                    Thread.sleep(500);
-                }
-                Thread.sleep(1000);
+                return false;
             }
             clickOnNpc(131, 229);
-        } while (!terminateFlag && !waitForDialogueBox(10));
+        } while (!terminateFlag && !waitForDialogueBox(20));
 
         click(323, 456);
         while (!getLocation().contains("danh nhan") && !terminateFlag) {
             Thread.sleep(200);
         }
         click(787, 480);
+        return true;
     }
 
     // go to HTT through TVD
     private void goToHTT() throws InterruptedException {
         if (terminateFlag) return;
-        Thread.sleep(1000);
         do {
             clickOnNpc(555, 279);
         } while (!terminateFlag && !waitForDialogueBox(20));

@@ -38,7 +38,7 @@ public class App {
 
     public static void main(String[] args) {
         clanMemo = new HashMap<>();
-        try (FileInputStream fileInputStream = new FileInputStream("input/tesseract/clans.ser");
+        try (FileInputStream fileInputStream = new FileInputStream("app/tesseract/clans.ser");
              ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream)) {
             clanMemo = (HashMap<Integer, String>) objectInputStream.readObject();
         } catch (Exception _) {
@@ -76,7 +76,7 @@ public class App {
             addAccount(panel, i, clanOverlay);
         }
 
-        Image plusIcon = new ImageIcon("input/tesseract/plus-icon.png").getImage();
+        Image plusIcon = new ImageIcon("app/tesseract/plus-icon.png").getImage();
         ImageIcon resizedIcon = new ImageIcon(plusIcon.getScaledInstance(15, 15, java.awt.Image.SCALE_SMOOTH));
 
         JButton plusButton = new JButton(resizedIcon);
@@ -92,7 +92,11 @@ public class App {
         }
 
         JButton pointsButton = new JButton("Points");
-        pointsButton.addActionListener(e -> orderPoints());
+        JScrollPane pointsPanel = new JScrollPane();
+        frame.getLayeredPane().add(pointsPanel, JLayeredPane.MODAL_LAYER);
+        pointsPanel.setBounds(5, 5, 250, frame.getHeight() - 45);
+        pointsPanel.setVisible(false);
+        pointsButton.addActionListener(e -> displayPoints(pointsPanel));
         pointsButton.setMargin(buttonPadding);
         panel.add(pointsButton);
 
@@ -146,7 +150,7 @@ public class App {
 
     private static JPanel getClanOverlay() {
         JPanel overlay = new JPanel();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             JPanel empty = new JPanel();
             empty.setBackground(new Color(0, 0, 0, 0));
             overlay.add(empty);
@@ -154,26 +158,15 @@ public class App {
         overlay.add(getCloseButton(overlay));
         overlay.setBackground(new Color(0, 0, 0, 200));
         overlay.setBorder(new EmptyBorder(2, 2, 2, 2));
-        overlay.setLayout(new GridLayout(6, 4, 2, 2));
-        String[] clans = new String[] {"", "ĐTK", "S-ĐTK", "", "Hiệp khách", "LPM", "TĐ", "LHO", "Thích khách", "TYL", "QV", "LHO", "Dược sư", "PTV", "ĐM", "", "Đạo tặc", "NCP", "TĐ", ""};
-        String[] classes = new String[] {"", "HK", "TK", "DS", "ĐT"};
-        for (int i = 0; i < clans.length; i++) {
-            if (clans[i].isBlank()) {
+        overlay.setLayout(new GridLayout(5, 4, 2, 2));
+        String[] clans = new String[] {"ĐTK", "S-ĐTK", "", "LPM", "TYL", "QV", "PTV", "NCP", "", "TĐ", "LHO", "ĐM"};
+        for (String clan : clans) {
+            if (clan.isBlank()) {
                 JPanel empty = new JPanel();
                 empty.setBackground(new Color(0, 0, 0, 0));
                 overlay.add(empty);
-            } else if (i % 4 == 0) {
-                JLabel label = new JLabel(clans[i]);
-                label.setForeground(new Color(240, 240, 240));
-                overlay.add(label);
             } else {
-                JButton button = new JButton(clans[i]);
-                String clan;
-                if ((i % 4 >= 2 && i / 4 != 2) || i == 11) {
-                    clan = classes[i / 4] + clans[i];
-                } else {
-                    clan = clans[i];
-                }
+                JButton button = new JButton(clan);
                 button.setMargin(buttonPadding);
                 button.addActionListener(e -> {
                     overlay.setVisible(false);
@@ -182,7 +175,7 @@ public class App {
                 overlay.add(button);
             }
         }
-        overlay.setBounds(5, 5, 340, 170);
+        overlay.setBounds(5, 5, 250, 130);
         return overlay;
     }
 
@@ -306,7 +299,7 @@ public class App {
             stopButtons[i].addActionListener(actionListener);
             if (!clanMemo.containsKey(UID) || !clanMemo.get(UID).equals(clan)) {
                 clanMemo.put(UID, clan);
-                try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("input/tesseract/clans.ser"))) {
+                try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("app/tesseract/clans.ser"))) {
                     oos.writeObject(clanMemo);
                 } catch (Exception _) {
 
@@ -364,22 +357,28 @@ public class App {
         return res;
     }
 
-    private static void orderPoints() {
+    private static void displayPoints(JScrollPane pointsPanel) {
+        if (pointsPanel.isVisible()) {
+            pointsPanel.setVisible(false);
+            return;
+        }
         synchronized (lock) {
             Map<String, Integer> map = new HashMap<>();
-            try (FileInputStream fileInputStream = new FileInputStream("input/tesseract/points.ser");
+            try (FileInputStream fileInputStream = new FileInputStream("app/tesseract/points.ser");
                  ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream)) {
                 map = (HashMap<String, Integer>) objectInputStream.readObject();
             } catch (Exception _) {
 
             }
-            try (FileWriter fileWriter = new FileWriter("input/tesseract/points.txt");
-                 PrintWriter printWriter = new PrintWriter(fileWriter);) {
-                map.entrySet().stream().sorted(Map.Entry.comparingByValue())
-                        .forEach(entry -> printWriter.println(entry.getKey() + ": " + entry.getValue()));
-            } catch (Exception _) {
-
+            StringBuilder sb = new StringBuilder();
+            map.entrySet().stream().sorted(Map.Entry.comparingByValue())
+                    .forEach(entry -> sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n"));
+            if (!sb.isEmpty()) {
+                sb.delete(sb.length() - 1, sb.length());
             }
+            JTextArea textArea = new JTextArea(sb.toString());
+            pointsPanel.setViewportView(textArea);
+            pointsPanel.setVisible(true);
         }
     }
 

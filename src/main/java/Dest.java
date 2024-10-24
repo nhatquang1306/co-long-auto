@@ -13,6 +13,8 @@ public class Dest {
             this.y = 132;
             this.dest = "tivo";
         } else if (methodId == 3) { // in hoang thach tran
+            this.mapX = -1;
+            this.mapY = -1;
             this.x = 34;
             this.y = 188;
             this.dest = "hoang thach";

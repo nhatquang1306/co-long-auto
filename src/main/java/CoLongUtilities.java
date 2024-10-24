@@ -116,13 +116,13 @@ public abstract class CoLongUtilities {
     public void savePoints() {
         synchronized (lock) {
             Map<String, Integer> map = new HashMap<>();
-            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("input/tesseract/points.ser"))) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("app/tesseract/points.ser"))) {
                 map = (HashMap<String, Integer>) ois.readObject();
             } catch (Exception _) {
 
             }
 
-            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("input/tesseract/points.ser"))) {
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("app/tesseract/points.ser"))) {
                 map.put(username, getPoints() - 10);
                 oos.writeObject(map);
             } catch (Exception _) {
@@ -242,6 +242,18 @@ public abstract class CoLongUtilities {
             User32.INSTANCE.SendMessage(handle, WinUser.WM_MOUSEMOVE, new WPARAM(0), lParam);
             Thread.sleep(200);
         }
+    }
+
+    public void clickRandomLocation(int xStart, int xLength, int yStart, int yLength) throws InterruptedException {
+        int x, y;
+        Color first;
+        do {
+            x = xStart + (int)(Math.random() * (xLength + 1));
+            y = yStart + (int)(Math.random() * (yLength + 1));
+            first = getPixelColor(x, y);
+            mouseMove(x, y);
+        } while (!terminateFlag && !getPixelColor(x, y).equals(first));
+        click(x, y);
     }
 
     public void click(int a, int b) throws InterruptedException {

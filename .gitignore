@@ -38,8 +38,9 @@ build/
 .DS_Store
 
 ### Custom ignore ###
-input/tesseract/clans.ser
-input/tesseract/points.ser
-input/tesseract/points.txt
+app/tesseract/clans.ser
+app/tesseract/points.ser
+app/tesseract/points.txt
 src/main/java/test.java
 screenshot.png
+input
