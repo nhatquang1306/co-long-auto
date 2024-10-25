@@ -94,9 +94,12 @@ public class App {
         JButton pointsButton = new JButton("Points");
         JScrollPane pointsPanel = new JScrollPane();
         frame.getLayeredPane().add(pointsPanel, JLayeredPane.MODAL_LAYER);
-        pointsPanel.setBounds(5, 5, 250, frame.getHeight() - 45);
+        pointsPanel.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
+        pointsPanel.setBackground(new Color(50, 50, 50));
         pointsPanel.setVisible(false);
-        pointsButton.addActionListener(e -> displayPoints(pointsPanel));
+        pointsButton.addActionListener(e -> {
+            displayPoints(pointsPanel, frame.getHeight() - 45);
+        });
         pointsButton.setMargin(buttonPadding);
         panel.add(pointsButton);
 
@@ -357,12 +360,13 @@ public class App {
         return res;
     }
 
-    private static void displayPoints(JScrollPane pointsPanel) {
+    private static void displayPoints(JScrollPane pointsPanel, int height) {
         if (pointsPanel.isVisible()) {
             pointsPanel.setVisible(false);
             return;
         }
         synchronized (lock) {
+            pointsPanel.setBounds(5, 5, 300, height);
             Map<String, Integer> map = new HashMap<>();
             try (FileInputStream fileInputStream = new FileInputStream("app/tesseract/points.ser");
                  ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream)) {
@@ -371,12 +375,19 @@ public class App {
 
             }
             StringBuilder sb = new StringBuilder();
-            map.entrySet().stream().sorted(Map.Entry.comparingByValue())
-                    .forEach(entry -> sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n"));
+            List<Map.Entry<String, Integer>> list = new ArrayList<>(map.entrySet());
+            list.sort(Map.Entry.comparingByValue());
+            for (int i = 0; i < list.size(); i++) {
+                String username = list.get(i).getKey();
+                int points = list.get(i).getValue();
+                sb.append(i + 1).append('\t').append(username).append(": ").append(points).append('\n');
+            }
             if (!sb.isEmpty()) {
                 sb.delete(sb.length() - 1, sb.length());
             }
             JTextArea textArea = new JTextArea(sb.toString());
+            textArea.setBackground(new Color(50, 50, 50));
+            textArea.setForeground(new Color(224, 255, 255));
             pointsPanel.setViewportView(textArea);
             pointsPanel.setVisible(true);
         }

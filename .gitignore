@@ -43,4 +43,5 @@ app/tesseract/points.ser
 app/tesseract/points.txt
 src/main/java/test.java
 screenshot.png
-input
+app/clicker-1.0-SNAPSHOT-jar-with-dependencies.jar
+app/auto-1.0.exe
