@@ -330,11 +330,11 @@ public class CoLong extends CoLongUtilities {
             } else if (isAtLocation(x, y)) {
                 Thread.sleep(1000);
                 if (isInBattle()) continue;
-                while (!terminateFlag && !finishQuest() && isAtLocation(x, y)) {
+                while (!terminateFlag) {
+                    if (finishQuest()) return;
+                    if (!isAtLocation(x, y)) break;
                     fixFinishQuest();
-                    Thread.sleep(1000);
                 }
-                return;
             } else if (clickedText) {
                 if (hasDialogueBox() && finishQuest()) {
                     return;
@@ -349,6 +349,7 @@ public class CoLong extends CoLongUtilities {
                 limit = 7000;
                 idleTime = System.currentTimeMillis();
             }
+            Thread.sleep(200);
         }
     }
 
@@ -357,6 +358,7 @@ public class CoLong extends CoLongUtilities {
         if (terminateFlag) return;
         int[] cur = getCoordinates();
         clickOnNpc(SwitchStatements.fixFinishQuest(cur[0], cur[1]));
+        waitForDialogueBox(20);
     }
 
     private boolean finishQuest() throws TesseractException, InterruptedException {

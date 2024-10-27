@@ -29,7 +29,9 @@ public class App {
     private static JButton[] stopButtons;
     private static JButton[] startButtons;
     private static Map<Integer, Pair> handleMap;
-    private static Map<Integer, String> clanMemo;
+    private static Map<Integer, Integer> clanMemo;
+    private static String[] skillHashes = new String[] {"", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10"};
+    private static String[] clanHashes = new String[] {"ĐTK", "S-ĐTK", "LPM", "TYL", "QV", "PTV", "NCP", "", "TĐ", "LHO", "ĐM"};
     private static int clanIndex;
     private static final Font buttonFont = new Font("Verdana", Font.BOLD, 14);
     private static final Color buttonColor = new Color(0, 120, 0);
@@ -40,7 +42,7 @@ public class App {
         clanMemo = new HashMap<>();
         try (FileInputStream fileInputStream = new FileInputStream("app/tesseract/clans.ser");
              ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream)) {
-            clanMemo = (HashMap<Integer, String>) objectInputStream.readObject();
+            clanMemo = (HashMap<Integer, Integer>) objectInputStream.readObject();
         } catch (Exception _) {
 
         }
@@ -190,7 +192,16 @@ public class App {
                 try {
                     int UID = Integer.parseInt(uidFields[i].getText());
                     if (clanMemo.containsKey(UID)) {
-                        clanButtons[i].setText(clanMemo.get(UID));
+                        int hash = clanMemo.get(UID);
+                        skillButtons[i].setText(getButtonText(hash, 0));
+                        newbieButtons[i].setText(getButtonText(hash, 1));
+                        petButtons[i].setText(getButtonText(hash, 2));
+                        clanButtons[i].setText(getButtonText(hash, 3));
+                    } else {
+                        skillButtons[i].setText("F1");
+                        newbieButtons[i].setText("F2");
+                        petButtons[i].setText("F1");
+                        clanButtons[i].setText("S-ĐTK");
                     }
                 } catch (NumberFormatException _) {
 
@@ -301,7 +312,7 @@ public class App {
             };
             stopButtons[i].addActionListener(actionListener);
             if (!clanMemo.containsKey(UID) || !clanMemo.get(UID).equals(clan)) {
-                clanMemo.put(UID, clan);
+                clanMemo.put(UID, getHash(skill, newbie, pet, clan));
                 try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("app/tesseract/clans.ser"))) {
                     oos.writeObject(clanMemo);
                 } catch (Exception _) {
@@ -391,6 +402,22 @@ public class App {
             pointsPanel.setViewportView(textArea);
             pointsPanel.setVisible(true);
         }
+    }
+
+    private static String getButtonText(int hash, int id) {
+        int index = (hash >> (id * 4)) & 15;
+        return id < 3 ? skillHashes[index] : clanHashes[index];
+    }
+
+    private static int getHash(int skill, int newbie, int pet, String clan) {
+        int hash = skill | (newbie << 4) | (pet << 8);
+        for (int i = 0; i < clanHashes.length; i++) {
+            if (clan.equals(clanHashes[i])) {
+                hash |= (i << 12);
+                break;
+            }
+        }
+        return hash;
     }
 
     private static Map<String, Integer> getKeyMap() {
