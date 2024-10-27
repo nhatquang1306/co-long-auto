@@ -1,18 +1,14 @@
 import com.sun.jna.platform.win32.User32;
-import com.sun.jna.platform.win32.WinDef;
-
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import com.sun.jna.platform.win32.WinDef.HWND;
 
 
