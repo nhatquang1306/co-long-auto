@@ -20,8 +20,8 @@ public abstract class CoLongUtilities {
     public boolean terminateFlag;
     public double scale;
     public String username;
-    public static final Color black = new Color(0, 0, 0);
     public static final Color white = new Color(254, 254, 254);
+    public static final Color dialogueBoxColor = new Color(20, 17, 0);
     public static final Color moveBar = new Color(81, 71, 34);
     public static final Color petMoveBar = new Color(49, 41, 15);
     public static final int[][] colorCoords = new int[][] {{1, 1}, {1, 4}, {2, 7}, {3, 1}, {5, 1}, {5, 8}};
@@ -81,7 +81,8 @@ public abstract class CoLongUtilities {
     public boolean hasDialogueBox() {
         Color color1 = getPixelColor(216, 304);
         Color color2 = getPixelColor(588, 317);
-        return color1.equals(black) && color2.equals(black);
+        Color color3 = getPixelColor(419, 248);
+        return color1.equals(Color.BLACK) && color2.equals(Color.BLACK) && color3.equals(dialogueBoxColor);
     }
 
     public boolean isInBattle() {
