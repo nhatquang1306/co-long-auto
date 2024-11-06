@@ -7,38 +7,17 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import com.sun.jna.platform.win32.WinDef.HWND;
 
 
-public class App {
-    private static Map<String, Integer> keyMap;
-    private static Set<Integer> functionKeys;
-    private static JTextField[] uidFields;
-    private static JTextField[] questCountFields;
-    private static JButton[] skillButtons;
-    private static JButton[] newbieButtons;
-    private static JButton[] petButtons;
-    private static JButton[] clanSkillButtons;
-    private static JButton[] clanButtons;
-    private static JButton[] stopButtons;
-    private static JButton[] startButtons;
-    private static Map<Integer, Pair> handleMap;
-    private static Map<Integer, Integer> clanMemo;
-    private static final String[] skillHashes = new String[] {"", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10"};
-    private static final String[] clanHashes = new String[] {"ĐTK", "S-ĐTK", "LPM", "TYL", "QV", "PTV", "NCP", "", "TĐ", "LHO", "ĐM"};
-    private static int clanIndex;
-    private static final Font buttonFont = new Font("Verdana", Font.BOLD, 14);
-    private static final Color buttonColor = new Color(0, 120, 0);
-    private static final Insets buttonPadding = new Insets(2, 2, 2, 2);
-    private static final Object lock = new Object();
+public class App extends ButtonMaker {
+
+
 
     public static void main(String[] args) {
         clanMemo = new HashMap<>();
-        try (FileInputStream fileInputStream = new FileInputStream("app/tesseract/clans.ser");
-             ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream)) {
-            clanMemo = (HashMap<Integer, Integer>) objectInputStream.readObject();
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("app/tesseract/clans.ser"))) {
+            clanMemo = (HashMap<Integer, Integer>) ois.readObject();
         } catch (Exception _) {
 
         }
@@ -46,6 +25,7 @@ public class App {
         JFrame frame = new JFrame("Auto Vận Tiêu");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(560, 255);
+        frame.setResizable(false);
 
         JPanel panel = new JPanel();
         panel.setBorder(new EmptyBorder(3, 3, 3, 3));
@@ -74,148 +54,49 @@ public class App {
             addAccount(panel, i, clanOverlay);
         }
 
-        Image plusIcon = new ImageIcon("app/tesseract/plus-icon.png").getImage();
-        ImageIcon resizedIcon = new ImageIcon(plusIcon.getScaledInstance(15, 15, java.awt.Image.SCALE_SMOOTH));
-
-        JButton plusButton = new JButton(resizedIcon);
-        plusButton.setBorderPainted(false);
-        plusButton.setContentAreaFilled(false);
-        plusButton.setHorizontalAlignment(SwingConstants.LEFT);
-        panel.add(plusButton);
-
-        JPanel[] empties = new JPanel[6];
-        for (int i = 0; i < 6; i++) {
-            empties[i] = new JPanel();
-            panel.add(empties[i]);
+        Component[] bottomRowCells = new Component[9];
+        bottomRowCells[0] = getPlusMinusButton('+');
+        bottomRowCells[1] = getPlusMinusButton('-');
+        bottomRowCells[6] = getShowButton();
+        bottomRowCells[7] = getHideButton();
+        bottomRowCells[8] = getPointsButton(frame);
+        for (int i = 0; i < 9; i++) {
+            if (bottomRowCells[i] == null) {
+                bottomRowCells[i] = new JPanel();
+            }
+            panel.add(bottomRowCells[i]);
         }
 
-        JButton pointsButton = new JButton("Points");
-        JScrollPane pointsPanel = new JScrollPane();
-        frame.getLayeredPane().add(pointsPanel, JLayeredPane.MODAL_LAYER);
-        pointsPanel.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
-        pointsPanel.setBackground(new Color(50, 50, 50));
-        pointsPanel.setVisible(false);
-        pointsButton.addActionListener(e -> {
-            displayPoints(pointsPanel, frame.getHeight() - 45);
-        });
-        pointsButton.setMargin(buttonPadding);
-        panel.add(pointsButton);
-
-        JButton resetButton = new JButton("Reset");
-        resetButton.addActionListener(e -> {
-            handleMap = getAllWindows();
-        });
-        resetButton.setMargin(buttonPadding);
-        panel.add(resetButton);
-
-        plusButton.addActionListener(e -> {
+        ((JButton)bottomRowCells[0]).addActionListener(e -> {
             if (size.get() >= 10) {
                 return;
             }
-            panel.remove(resetButton);
-            panel.remove(pointsButton);
-            for (int i = 5; i >= 0; i--) {
-                panel.remove(empties[i]);
-            }
-            panel.remove(plusButton);
+            for (int i = 8; i >= 0; i--) panel.remove(bottomRowCells[i]);
 
             int i = size.getAndIncrement() + 1;
             addAccount(panel, i - 1, clanOverlay);
             frame.setSize(560, 33 * (i + 2) + 3 * (i + 3));
             panel.setLayout(new GridLayout(i + 2, 8, 5, 5));
 
-            panel.add(plusButton);
-            for (int j = 0; j < 6; j++) {
-                panel.add(empties[j]);
-            }
-            panel.add(pointsButton);
-            panel.add(resetButton);
+            for (int j = 0; j < 9; j++) panel.add(bottomRowCells[j]);
         });
+
+        ((JButton)bottomRowCells[1]).addActionListener(e -> {
+            if (size.get() <= 5) {
+                return;
+            }
+            int i = size.getAndDecrement() - 1;
+            removeAccount(panel, i);
+            frame.setSize(560, 33 * (i + 2) + 3 * (i + 3));
+            panel.setLayout(new GridLayout(i + 2, 8, 5, 5));
+        });
+
         frame.setVisible(true);
-    }
-
-    private static JLabel getCloseButton(JPanel overlay) {
-        JLabel button = new JLabel("X");
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                overlay.setVisible(false);
-            }
-        });
-        button.setForeground(new Color(240, 240, 240));
-        button.setBorder(new EmptyBorder(0, 0, 0, 3));
-        button.setHorizontalAlignment(SwingConstants.RIGHT);
-        button.setVerticalAlignment(SwingConstants.TOP);
-        return button;
-    }
-
-    private static JPanel getClanOverlay() {
-        JPanel overlay = new JPanel();
-        for (int i = 0; i < 2; i++) {
-            JPanel empty = new JPanel();
-            empty.setBackground(new Color(0, 0, 0, 0));
-            overlay.add(empty);
-        }
-        overlay.add(getCloseButton(overlay));
-        overlay.setBackground(new Color(0, 0, 0, 200));
-        overlay.setBorder(new EmptyBorder(2, 2, 2, 2));
-        overlay.setLayout(new GridLayout(5, 4, 2, 2));
-        String[] clans = new String[] {"ĐTK", "S-ĐTK", "", "LPM", "TYL", "QV", "PTV", "NCP", "", "TĐ", "LHO", "ĐM"};
-        for (String clan : clans) {
-            if (clan.isBlank()) {
-                JPanel empty = new JPanel();
-                empty.setBackground(new Color(0, 0, 0, 0));
-                overlay.add(empty);
-            } else {
-                JButton button = new JButton(clan);
-                button.setMargin(buttonPadding);
-                button.addActionListener(e -> {
-                    overlay.setVisible(false);
-                    clanButtons[clanIndex].setText(clan);
-                });
-                overlay.add(button);
-            }
-        }
-        overlay.setBounds(5, 5, 250, 130);
-        return overlay;
     }
 
     private static void addAccount(JPanel panel, int i, JPanel overlay) {
         uidFields[i] = new JTextField();
-        uidFields[i].getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                try {
-                    int UID = Integer.parseInt(uidFields[i].getText());
-                    if (clanMemo.containsKey(UID)) {
-                        int hash = clanMemo.get(UID);
-                        skillButtons[i].setText(getButtonText(hash, 0));
-                        newbieButtons[i].setText(getButtonText(hash, 1));
-                        petButtons[i].setText(getButtonText(hash, 2));
-                        clanSkillButtons[i].setText(getButtonText(hash, 3));
-                        clanButtons[i].setText(getButtonText(hash, 4));
-                    } else {
-                        skillButtons[i].setText("F1");
-                        newbieButtons[i].setText("F2");
-                        petButtons[i].setText("F1");
-                        clanSkillButtons[i].setText("F10");
-                        clanButtons[i].setText("S-ĐTK");
-                    }
-                } catch (NumberFormatException _) {
-
-                }
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                insertUpdate(e);
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-
-            }
-        });
+        uidFields[i].getDocument().addDocumentListener(getAutofill(i));
         questCountFields[i] = new JTextField("10");
 
         panel.add(uidFields[i]);
@@ -274,6 +155,43 @@ public class App {
         startButtons[i].addActionListener(e -> startAccount(i));
     }
 
+    private static DocumentListener getAutofill(int i) {
+        return new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                try {
+                    int UID = Integer.parseInt(uidFields[i].getText());
+                    if (clanMemo.containsKey(UID)) {
+                        int hash = clanMemo.get(UID);
+                        skillButtons[i].setText(getButtonText(hash, 0));
+                        newbieButtons[i].setText(getButtonText(hash, 1));
+                        petButtons[i].setText(getButtonText(hash, 2));
+                        clanSkillButtons[i].setText(getButtonText(hash, 3));
+                        clanButtons[i].setText(getButtonText(hash, 4));
+                    } else {
+                        skillButtons[i].setText("F1");
+                        newbieButtons[i].setText("F2");
+                        petButtons[i].setText("F1");
+                        clanSkillButtons[i].setText("F10");
+                        clanButtons[i].setText("S-ĐTK");
+                    }
+                } catch (NumberFormatException _) {
+
+                }
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                insertUpdate(e);
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+
+            }
+        };
+    }
+
     private static void startAccount(int i) {
         String a = uidFields[i].getText();
         String b = questCountFields[i].getText();
@@ -285,11 +203,14 @@ public class App {
             int UID = Integer.parseInt(a);
             int questCount = Integer.parseInt(b);
 
-            if (!handleMap.containsKey(UID)) {
-                return;
-            } else if (questCount <= 0 || questCount >= 10) {
-                questCount = 10;
-                questCountFields[i].setText("10");
+            synchronized (lock) {
+                if (!handleMap.containsKey(UID)) {
+                    handleMap = getAllWindows();
+                    if (!handleMap.containsKey(UID)) return;
+                } else if (questCount <= 0 || questCount >= 10) {
+                    questCount = 10;
+                    questCountFields[i].setText("10");
+                }
             }
 
             int skill = keyMap.get(skillButtons[i].getText());
@@ -327,80 +248,17 @@ public class App {
         }
     }
 
-    private static void initialize() {
-        keyMap = getKeyMap();
-        functionKeys = Set.of(KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4,
-                KeyEvent.VK_F5, KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8, KeyEvent.VK_F9, KeyEvent.VK_F10);
-        uidFields = new JTextField[10];
-        questCountFields = new JTextField[10];
-        skillButtons = new JButton[10];
-        newbieButtons = new JButton[10];
-        petButtons = new JButton[10];
-        clanSkillButtons = new JButton[10];
-        clanButtons = new JButton[10];
-        stopButtons = new JButton[10];
-        startButtons = new JButton[10];
-        handleMap = getAllWindows();
-    }
-
-    private static Map<Integer, Pair> getAllWindows() {
-        User32 user32 = User32.INSTANCE;
-        Map<Integer, Pair> res = new HashMap<>();
-        user32.EnumWindows((hwnd, arg) -> {
-            char[] text = new char[100];
-            user32.GetWindowText(hwnd, text, 100);
-            String title = new String(text).trim();
-            if (title.startsWith("http://colongonline.com")) {
-                int UID = 0;
-                int index = 24;
-                StringBuilder username = new StringBuilder();
-                while (index < title.length() && title.charAt(index) != '[') {
-                    username.append(title.charAt(index));
-                    index++;
-                }
-                index += 6;
-                while (index < title.length() && Character.isDigit(title.charAt(index))) {
-                    UID = UID * 10 + Character.getNumericValue(title.charAt(index));
-                    index++;
-                }
-                res.put(UID, new Pair(username.toString(), hwnd));
-            }
-            return true;
-        }, null);
-        return res;
-    }
-
-    private static void displayPoints(JScrollPane pointsPanel, int height) {
-        if (pointsPanel.isVisible()) {
-            pointsPanel.setVisible(false);
-            return;
-        }
-        synchronized (lock) {
-            pointsPanel.setBounds(5, 5, 300, height);
-            Map<String, Integer> map = new HashMap<>();
-            try (FileInputStream fileInputStream = new FileInputStream("app/tesseract/points.ser");
-                 ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream)) {
-                map = (HashMap<String, Integer>) objectInputStream.readObject();
-            } catch (Exception _) {
-
-            }
-            StringBuilder sb = new StringBuilder();
-            List<Map.Entry<String, Integer>> list = new ArrayList<>(map.entrySet());
-            list.sort(Map.Entry.comparingByValue());
-            for (int i = 0; i < list.size(); i++) {
-                String username = list.get(i).getKey();
-                int points = list.get(i).getValue();
-                sb.append(i + 1).append('\t').append(username).append(": ").append(points).append('\n');
-            }
-            if (!sb.isEmpty()) {
-                sb.delete(sb.length() - 1, sb.length());
-            }
-            JTextArea textArea = new JTextArea(sb.toString());
-            textArea.setBackground(new Color(50, 50, 50));
-            textArea.setForeground(new Color(224, 255, 255));
-            pointsPanel.setViewportView(textArea);
-            pointsPanel.setVisible(true);
-        }
+    private static void removeAccount(JPanel panel, int i) {
+        panel.remove(startButtons[i]);
+        panel.remove(stopButtons[i]);
+        panel.remove(clanButtons[i]);
+        panel.remove(clanSkillButtons[i]);
+        panel.remove(petButtons[i]);
+        panel.remove(newbieButtons[i]);
+        panel.remove(skillButtons[i]);
+        panel.remove(questCountFields[i]);
+        uidFields[i].setText("");
+        panel.remove(uidFields[i]);
     }
 
     private static String getButtonText(int hash, int id) {
@@ -418,29 +276,4 @@ public class App {
         }
         return hash;
     }
-
-    private static Map<String, Integer> getKeyMap() {
-        Map<String, Integer> keyMap = new HashMap<>();
-        keyMap.put("F1", 1);
-        keyMap.put("F2", 2);
-        keyMap.put("F3", 3);
-        keyMap.put("F4", 4);
-        keyMap.put("F5", 5);
-        keyMap.put("F6", 6);
-        keyMap.put("F7", 7);
-        keyMap.put("F8", 8);
-        keyMap.put("F9", 9);
-        keyMap.put("F10", 10);
-        keyMap.put("Chay", 0);
-        return keyMap;
-    }
-    private static class Pair {
-        String username;
-        HWND handle;
-        public Pair(String username, HWND handle) {
-            this.username = username;
-            this.handle = handle;
-        }
-    }
-
 }

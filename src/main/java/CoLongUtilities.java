@@ -16,10 +16,10 @@ import static com.sun.jna.platform.win32.WinUser.*;
 public abstract class CoLongUtilities {
     public Tesseract tesseract;
     public HWND handle;
-    public Object lock;
     public boolean terminateFlag;
     public double scale;
     public String username;
+    public final Object lock = new Object();
     public static final Color white = new Color(254, 254, 254);
     public static final Color dialogueBoxColor = new Color(20, 17, 0);
     public static final Color moveBar = new Color(81, 71, 34);
@@ -114,7 +114,7 @@ public abstract class CoLongUtilities {
         return res;
     }
 
-    public void savePoints() {
+    public int savePoints() {
         synchronized (lock) {
             Map<String, Integer> map = new HashMap<>();
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("app/tesseract/points.ser"))) {
@@ -123,12 +123,14 @@ public abstract class CoLongUtilities {
 
             }
 
+            int points = Math.max(getPoints() - 10, 0);
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("app/tesseract/points.ser"))) {
-                map.put(username, getPoints() - 10);
+                map.put(username, points);
                 oos.writeObject(map);
             } catch (Exception _) {
 
             }
+            return points;
         }
     }
 
@@ -308,7 +310,7 @@ public abstract class CoLongUtilities {
     }
 
     public void clickOnNpc(int[] arr) throws InterruptedException {
-        click(arr[0], arr[1]);
+        clickOnNpc(arr[0], arr[1]);
     }
 
     public void rightClick(int[] arr) throws InterruptedException {

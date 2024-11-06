@@ -41,7 +41,7 @@ build/
 app/tesseract/clans.ser
 app/tesseract/points.ser
 src/main/java/test.java
-screenshot.png
-app/clicker-1.0-SNAPSHOT-jar-with-dependencies.jar
-app/auto-van-tieu-1.0.exe
+app/AutoVT.jar
+app/AutoVT-1.0.exe
 captchas/
+screenshot.png

@@ -9,7 +9,7 @@ import java.util.*;
 
 
 public class CoLong extends CoLongUtilities {
-    private final int questCount;
+    private int questCount;
     private final Fight fight;
     private final int clanSkill;
     private final Clan clan;
@@ -38,7 +38,6 @@ public class CoLong extends CoLongUtilities {
             this.flag = new int[3];
         }
 
-        this.lock = new Object();
         this.terminateFlag = false;
         this.startButton = startButton;
 
@@ -55,7 +54,6 @@ public class CoLong extends CoLongUtilities {
         try {
             Set<String> visited = new HashSet<>();
             visited.add("truong thanh tieu.");
-            visited.add("thanh dan.");
             for (int j = 0; j < questCount; j++) {
                 Deque<Dest> deque = new ArrayDeque<>();
                 boolean closeInventory = false;
@@ -70,7 +68,7 @@ public class CoLong extends CoLongUtilities {
                     goToTTTC(visited);
                     closeInventory = true;
                 }
-                receiveQuest(deque, visited, closeInventory && clan == null, j == questCount - 1);
+                receiveQuest(deque, visited, closeInventory && clan == null);
                 traveling(deque, visited);
             }
             goToTTTC(visited);
@@ -173,7 +171,7 @@ public class CoLong extends CoLongUtilities {
     }
 
     // click on npc to receive quest
-    private void receiveQuest(Deque<Dest> deque, Set<String> visited, boolean closeInventory, boolean savePoints) throws InterruptedException, TesseractException {
+    private void receiveQuest(Deque<Dest> deque, Set<String> visited, boolean closeInventory) throws InterruptedException, TesseractException {
         if (terminateFlag) return;
         if (closeInventory) click(569, 586);
         // where to click depends on how the user got there
@@ -190,7 +188,9 @@ public class CoLong extends CoLongUtilities {
         } while (!terminateFlag && !waitForDialogueBox(20));
         click(272, 305); // click on van tieu ca nhan
         waitForDialogueBox(20);
-        if (savePoints) savePoints();
+        if (savePoints() < 10) {
+            questCount = 0;
+        }
         click(285, 344); // click on cap 2
         waitForDialogueBox(30);
         // capture image to parse destination
@@ -331,7 +331,7 @@ public class CoLong extends CoLongUtilities {
                 Thread.sleep(1000);
                 if (isInBattle()) continue;
                 while (!terminateFlag) {
-                    if (finishQuest()) return;
+                    if (hasDialogueBox() && finishQuest()) return;
                     if (!isAtLocation(x, y)) break;
                     fixFinishQuest();
                 }
