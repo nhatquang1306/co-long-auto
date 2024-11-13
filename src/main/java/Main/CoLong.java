@@ -242,7 +242,7 @@ public class CoLong extends CoLongUtilities {
                 }
                 idleTime = System.currentTimeMillis();
             }
-            Thread.sleep(200);
+            Thread.sleep(400);
         }
     }
 
@@ -345,7 +345,7 @@ public class CoLong extends CoLongUtilities {
                 limit = 7000;
                 idleTime = System.currentTimeMillis();
             }
-            Thread.sleep(200);
+            Thread.sleep(400);
         }
     }
 
@@ -362,7 +362,8 @@ public class CoLong extends CoLongUtilities {
         BufferedImage image = captureWindow(227, 280, 45, 71);
         int y = 0;
         // go through each line of dialogue box to look for 'van tieu'
-        outerLoop: for (int i = 0; i < 4 && !terminateFlag; i++) {
+        outerLoop: for (int i = 0; i < 5 && !terminateFlag; i++) {
+            if (i == 4) y = 37;
             for (int[] vtPoint : vtPoints) {
                 if (image.getRGB(vtPoint[0], y + vtPoint[1]) != -16711936) {
                     y += 19;

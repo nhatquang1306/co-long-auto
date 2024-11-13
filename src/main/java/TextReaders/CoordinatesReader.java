@@ -21,24 +21,26 @@ public class CoordinatesReader {
         this.handle = handle;
     }
     public int[] read() {
-        int[] res = new int[2];
-        BufferedImage image = captureWindow();
-
-        int x = 0;
-        for (int k = 0; k < 2; k++) {
-            for (int i = 0; i < 3; i++) {
-                Integer val = numberHashes.get(getHash(image, x));
-                while (val == null && i++ < 2) {
-                    x += 4;
-                    val = numberHashes.get(getHash(image, x));
+        try {
+            int[] res = new int[2];
+            BufferedImage image = captureWindow();
+            int x = 0;
+            for (int k = 0; k < 2; k++) {
+                for (int i = 0; i < 3; i++) {
+                    Integer val = numberHashes.get(getHash(image, x));
+                    while (val == null && i++ < 2) {
+                        x += 4;
+                        val = numberHashes.get(getHash(image, x));
+                    }
+                    x += numberDistances[val];
+                    res[k] = res[k] * 10 + val;
                 }
-                x += numberDistances[val];
-                res[k] = res[k] * 10 + val;
+                x += 23;
             }
-            x += 23;
+            return res;
+        } catch (Exception _) {
+            return new int[2];
         }
-
-        return res;
     }
 
     private static int getHash(BufferedImage image, int x) {

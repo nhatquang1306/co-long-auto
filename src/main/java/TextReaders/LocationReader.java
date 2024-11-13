@@ -24,7 +24,8 @@ public class LocationReader {
     }
 
     public String read() {
-        return locationHashes.get(getHash());
+        String location = locationHashes.get(getHash());
+        return location == null ? "" : location;
     }
 
     private int getHash() {

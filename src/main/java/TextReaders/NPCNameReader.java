@@ -24,7 +24,8 @@ public class NPCNameReader {
     }
 
     public String read() {
-        return npcHashes.get(getHash());
+        String NPC = npcHashes.get(getHash());
+        return NPC == null ? "" : NPC;
     }
 
     private int getHash() {
