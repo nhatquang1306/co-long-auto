@@ -1,17 +1,13 @@
 package TextReaders;
 
 import com.sun.jna.Memory;
-import com.sun.jna.platform.win32.GDI32;
-import com.sun.jna.platform.win32.User32;
-import com.sun.jna.platform.win32.WinDef;
-import com.sun.jna.platform.win32.WinGDI;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import com.sun.jna.platform.win32.WinDef.HWND;
-public class NPCNameReader {
-    HWND handle;
+
+public class NPCNameReader extends Reader {
     private static final int[][] npcPoints = new int[][] {
             {15, 6}, {42, 4}, {57, 10}, {27, 10}, {73, 13},
             {46, 0}, {0, 13}, {51, 4}, {23, 8}, {13, 11}
@@ -29,33 +25,7 @@ public class NPCNameReader {
     }
 
     private int getHash() {
-        WinDef.HDC windowDC = User32.INSTANCE.GetDC(handle); // Get the window's device context (DC)
-        WinDef.HDC memDC = GDI32.INSTANCE.CreateCompatibleDC(windowDC); // Create a compatible DC in memory
-        WinDef.HBITMAP memBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(windowDC, 80, 14);
-        GDI32.INSTANCE.SelectObject(memDC, memBitmap); // Select the bitmap into the memory DC
-
-        // BitBlt to copy the window content to the memory DC
-        GDI32.INSTANCE.BitBlt(memDC, 0, 0, 80, 14, windowDC, 492, 235, GDI32.SRCCOPY);
-
-        // Get the bitmap info
-        WinGDI.BITMAPINFO bmi = new WinGDI.BITMAPINFO();
-        bmi.bmiHeader.biWidth = 80;
-        bmi.bmiHeader.biHeight = -14; // Negative to indicate top-down drawing
-        bmi.bmiHeader.biPlanes = 1;
-        bmi.bmiHeader.biBitCount = 32;
-        bmi.bmiHeader.biCompression = WinGDI.BI_RGB;
-
-        // Allocate memory for pixel data
-        Memory buffer = new Memory(80 * 14 * 4); // 4 bytes per pixel (32-bit)
-
-        // Retrieve the pixel data into the buffer
-        GDI32.INSTANCE.GetDIBits(memDC, memBitmap, 0, 14, buffer, bmi, WinGDI.DIB_RGB_COLORS);
-
-        // Release resources
-        GDI32.INSTANCE.DeleteObject(memBitmap);
-        GDI32.INSTANCE.DeleteDC(memDC);
-        User32.INSTANCE.ReleaseDC(handle, windowDC);
-
+        Memory buffer = getBuffer(495, 261, 80, 14);
         int hash = 0;
         for (int i = 0; i < npcPoints.length; i++) {
             int pixelOffset = (npcPoints[i][1] * 80 + npcPoints[i][0]) * 4;

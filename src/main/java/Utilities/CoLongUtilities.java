@@ -10,6 +10,7 @@ import com.sun.jna.platform.win32.*;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.win32.StdCallLibrary;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -30,13 +31,17 @@ public abstract class CoLongUtilities {
     public static final Color dialogueBoxColor = new Color(20, 17, 0);
     public static final Color moveBar = new Color(81, 71, 34);
     public static final Color petMoveBar = new Color(49, 41, 15);
-    public static final int[][] vtPoints = new int[][] {
-            {4, 8}, {32, 6}, {25, 8}, {34, 4}, {33, 2},
-            {9, 7}, {26, 4}, {17, 4}, {29, 10}, {24, 4},
-            {0, 2}, {6, 2}, {18, 10}, {43, 10}, {29, 2}
-    };
+    public static BufferedImage vtPicture = null;
 
     public void initialize() {
+        if (vtPicture == null) {
+            try {
+                vtPicture = ImageIO.read(new File("app/data/vt.png"));
+            } catch (IOException _) {
+
+            }
+        }
+        this.terminateFlag = false;
         this.cr = new CoordinatesReader(handle);
         this.pr = new PointsReader(handle);
         this.lr = new LocationReader(handle);
@@ -135,49 +140,30 @@ public abstract class CoLongUtilities {
         }
     }
 
-    public BufferedImage captureWindow(int x, int y, int width, int height) {
-        x -= 3;
-        y -= 26;
-        HDC windowDC = User32.INSTANCE.GetDC(handle); // Get the window's device context (DC)
-        HDC memDC = GDI32.INSTANCE.CreateCompatibleDC(windowDC); // Create a compatible DC in memory
-        HBITMAP memBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(windowDC, width, height);
-        GDI32.INSTANCE.SelectObject(memDC, memBitmap); // Select the bitmap into the memory DC
-
-        // BitBlt to copy the window content to the memory DC
-        GDI32.INSTANCE.BitBlt(memDC, 0, 0, width, height, windowDC, x, y, GDI32.SRCCOPY);
-
-        // Get the bitmap info
-        WinGDI.BITMAPINFO bmi = new WinGDI.BITMAPINFO();
-        bmi.bmiHeader.biWidth = width;
-        bmi.bmiHeader.biHeight = -height; // Negative to indicate top-down drawing
-        bmi.bmiHeader.biPlanes = 1;
-        bmi.bmiHeader.biBitCount = 32;
-        bmi.bmiHeader.biCompression = WinGDI.BI_RGB;
-
-        // Allocate memory for pixel data
-        Memory buffer = new Memory(width * height * 4); // 4 bytes per pixel (32-bit)
-
-        // Retrieve the pixel data into the buffer
-        GDI32.INSTANCE.GetDIBits(memDC, memBitmap, 0, height, buffer, bmi, WinGDI.DIB_RGB_COLORS);
-
-        // Release resources
-        GDI32.INSTANCE.DeleteObject(memBitmap);
-        GDI32.INSTANCE.DeleteDC(memDC);
-        User32.INSTANCE.ReleaseDC(handle, windowDC);
-
-        // Convert the pixel data into a BufferedImage
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        for (int row = 0; row < height; row++) {
-            for (int col = 0; col < width; col++) {
-                int pixelOffset = (row * width + col) * 4;
-                int blue = buffer.getByte(pixelOffset) & 0xFF;
-                int green = buffer.getByte(pixelOffset + 1) & 0xFF;
-                int red = buffer.getByte(pixelOffset + 2) & 0xFF;
-                int rgb = (red << 16) | (green << 8) | blue;
-                image.setRGB(col, row, rgb);
+    public int findVT() {
+        Memory buffer = pr.getBuffer(227, 280, 45, 71);
+        int y = 0;
+        outerLoop: for (int i = 0; i < 5 && !terminateFlag; i++) {
+            if (i == 4) y = 37;
+            for (int row = y; row < y + 14; row++) {
+                for (int col = 0; col < 45; col++) {
+                    if (vtPicture.getRGB(col, row - y) != -16711936) {
+                        continue;
+                    }
+                    int pixelOffset = (row * 45 + col) * 4;
+                    int blue = buffer.getByte(pixelOffset) & 0xFF;
+                    int green = buffer.getByte(pixelOffset + 1) & 0xFF;
+                    int red = buffer.getByte(pixelOffset + 2) & 0xFF;
+                    int rgb = (0xFF << 24) | (red << 16) | (green << 8) | blue;
+                    if (rgb != -16711936) {
+                        y += 19;
+                        continue outerLoop;
+                    }
+                }
             }
+            return y;
         }
-        return image;
+        return -1;
     }
 
     public Color getPixelColor(int x, int y) {

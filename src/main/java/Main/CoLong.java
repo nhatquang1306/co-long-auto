@@ -11,7 +11,6 @@ import com.sun.jna.platform.win32.WinDef.HWND;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.util.*;
 
 
@@ -39,8 +38,6 @@ public class CoLong extends CoLongUtilities {
             this.clan = new Clan(clan);
             this.flag = new int[3];
         }
-
-        this.terminateFlag = false;
         this.startButton = startButton;
 
         initialize();
@@ -64,7 +61,7 @@ public class CoLong extends CoLongUtilities {
                     goToTTTC(visited);
                     closeInventory = true;
                 }
-                receiveQuest(deque, visited, closeInventory && clan == null);
+                receiveQuest(deque, visited, closeInventory && clan == null, false);
                 traveling(deque, visited);
             }
             goToTTTC(visited);
@@ -167,7 +164,7 @@ public class CoLong extends CoLongUtilities {
     }
 
     // click on npc to receive quest
-    private void receiveQuest(Deque<Dest> deque, Set<String> visited, boolean closeInventory) throws InterruptedException {
+    private void receiveQuest(Deque<Dest> deque, Set<String> visited, boolean closeInventory, boolean isRetry) throws InterruptedException {
         if (terminateFlag) return;
         if (closeInventory) click(569, 586);
         // where to click depends on how the user got there
@@ -188,7 +185,10 @@ public class CoLong extends CoLongUtilities {
             questCount = 0;
         }
         click(285, 344); // click on cap 2
-        waitForDialogueBox(30);
+        if (!isRetry && !waitForDialogueBox(50)) {
+            receiveQuest(deque, visited, false, true);
+            return;
+        }
         // capture image to parse destination
         String NPC = nnr.read();
         click(557, 266);
@@ -359,24 +359,13 @@ public class CoLong extends CoLongUtilities {
 
     private boolean finishQuest() throws InterruptedException {
         if (terminateFlag) return true;
-        BufferedImage image = captureWindow(227, 280, 45, 71);
-        int y = 0;
-        // go through each line of dialogue box to look for 'van tieu'
-        outerLoop: for (int i = 0; i < 5 && !terminateFlag; i++) {
-            if (i == 4) y = 37;
-            for (int[] vtPoint : vtPoints) {
-                if (image.getRGB(vtPoint[0], y + vtPoint[1]) != -16711936) {
-                    y += 19;
-                    continue outerLoop;
-                }
-            }
+        int y = findVT();
+        if (y >= 0) {
             click(251, y + 289);
             waitForDialogueBox(30);
             click(557, 266); // click on final text box;
-            return true;
-
         }
-        return false;
+        return y >= 0;
     }
 
     // method for getting out of truong thanh tieu cuc

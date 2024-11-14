@@ -1,18 +1,13 @@
 package TextReaders;
 
 import com.sun.jna.Memory;
-import com.sun.jna.platform.win32.GDI32;
-import com.sun.jna.platform.win32.User32;
-import com.sun.jna.platform.win32.WinDef;
-import com.sun.jna.platform.win32.WinGDI;
 
+import com.sun.jna.platform.win32.*;
+import com.sun.jna.platform.win32.WinDef.HWND;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.sun.jna.platform.win32.WinDef.HWND;
-
-public class LocationReader {
-    private final HWND handle;
+public class LocationReader extends Reader {
     private static final int[][] locationPoints = new int[][] {
             {58, 7}, {27, 3}, {84, 9}, {1, 6}, {47, 3}, {21, 2}, {20, 8}, {76, 10},
             {80, 5}, {9, 4}, {49, 2}, {29, 7}, {54, 7}, {91, 3}, {9, 0}, {38, 4}
@@ -29,33 +24,8 @@ public class LocationReader {
     }
 
     private int getHash() {
-        WinDef.HDC windowDC = User32.INSTANCE.GetDC(handle); // Get the window's device context (DC)
-        WinDef.HDC memDC = GDI32.INSTANCE.CreateCompatibleDC(windowDC); // Create a compatible DC in memory
-        WinDef.HBITMAP memBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(windowDC, 112, 14);
-        GDI32.INSTANCE.SelectObject(memDC, memBitmap); // Select the bitmap into the memory DC
-
-        // BitBlt to copy the window content to the memory DC
-        GDI32.INSTANCE.BitBlt(memDC, 0, 0, 112, 14, windowDC, 655, 7, GDI32.SRCCOPY);
-
-        // Get the bitmap info
-        WinGDI.BITMAPINFO bmi = new WinGDI.BITMAPINFO();
-        bmi.bmiHeader.biWidth = 112;
-        bmi.bmiHeader.biHeight = -14; // Negative to indicate top-down drawing
-        bmi.bmiHeader.biPlanes = 1;
-        bmi.bmiHeader.biBitCount = 32;
-        bmi.bmiHeader.biCompression = WinGDI.BI_RGB;
-
-        // Allocate memory for pixel data
-        Memory buffer = new Memory(112 * 14 * 4); // 4 bytes per pixel (32-bit)
-
-        // Retrieve the pixel data into the buffer
-        GDI32.INSTANCE.GetDIBits(memDC, memBitmap, 0, 14, buffer, bmi, WinGDI.DIB_RGB_COLORS);
-
-        // Release resources
-        GDI32.INSTANCE.DeleteObject(memBitmap);
-        GDI32.INSTANCE.DeleteDC(memDC);
-        User32.INSTANCE.ReleaseDC(handle, windowDC);
-
+        User32.INSTANCE.SetForegroundWindow(handle);
+        Memory buffer = getBuffer(658, 33, 112, 14);
         int hash = 0;
         for (int i = 0; i < locationPoints.length; i++) {
             int pixelOffset = (locationPoints[i][1] * 112 + locationPoints[i][0]) * 4;
