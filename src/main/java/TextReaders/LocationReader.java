@@ -2,7 +2,6 @@ package TextReaders;
 
 import com.sun.jna.Memory;
 
-import com.sun.jna.platform.win32.*;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +23,6 @@ public class LocationReader extends Reader {
     }
 
     private int getHash() {
-        User32.INSTANCE.SetForegroundWindow(handle);
         Memory buffer = getBuffer(658, 33, 112, 14);
         int hash = 0;
         for (int i = 0; i < locationPoints.length; i++) {
