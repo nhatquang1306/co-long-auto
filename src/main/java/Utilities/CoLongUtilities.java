@@ -121,7 +121,7 @@ public abstract class CoLongUtilities {
     }
 
     public int savePoints() {
-        synchronized (lock) {
+        synchronized (ButtonMaker.pointLock) {
             Map<String, Integer> map = new HashMap<>();
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("app/data/points.ser"))) {
                 map = (HashMap<String, Integer>) ois.readObject();

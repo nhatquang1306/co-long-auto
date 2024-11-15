@@ -31,6 +31,7 @@ public abstract class ButtonMaker {
     public static final Color buttonColor = new Color(0, 120, 0);
     public static final Insets buttonPadding = new Insets(2, 2, 2, 2);
     public static final Object lock = new Object();
+    public static final Object pointLock = new Object();
 
     public static JPanel getClanOverlay() {
         JPanel overlay = new JPanel();
@@ -149,7 +150,7 @@ public abstract class ButtonMaker {
             readPointsPanel(pointsPanel, pointsText);
             return;
         }
-        synchronized (lock) {
+        synchronized (pointLock) {
             pointsPanel.setBounds(5, 5, 300, height);
             Map<String, Integer> map = new HashMap<>();
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("app/data/points.ser"))) {
@@ -188,10 +189,12 @@ public abstract class ButtonMaker {
             }
             map.put(account.substring(a + 1, b), points);
         }
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("app/data/points.ser"))) {
-            oos.writeObject(map);
-        } catch (Exception _) {
+        synchronized (pointLock) {
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("app/data/points.ser"))) {
+                oos.writeObject(map);
+            } catch (Exception _) {
 
+            }
         }
         pointsPanel.setVisible(false);
     }

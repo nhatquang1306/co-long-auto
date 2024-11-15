@@ -185,7 +185,7 @@ public class CoLong extends CoLongUtilities {
             questCount = 0;
         }
         click(285, 344); // click on cap 2
-        if (!isRetry && !waitForDialogueBox(50)) {
+        if (!waitForDialogueBox(50) && !isRetry) {
             receiveQuest(deque, visited, false, true);
             return;
         }
