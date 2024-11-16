@@ -15,21 +15,17 @@ public class PointsReader extends Reader {
     }
 
     public int read() {
-        try {
-            BufferedImage image = captureWindow(296, 309, 40, 9);
-            int x = 0, res = 0;
-            int hash = getHash(image, x);
-            while (numberHashes.containsKey(hash)) {
-                int num = numberHashes.get(hash);
-                res = res * 10 + num;
-                x += numberDistances[num];
-                if (x >= 35) break;
-                hash = getHash(image, x);
-            }
-            return res;
-        } catch (Exception _) {
-            return 0;
+        BufferedImage image = captureWindow(296, 309, 40, 9);
+        int x = 0, res = 0;
+        int hash = getHash(image, x);
+        while (numberHashes.containsKey(hash)) {
+            int num = numberHashes.get(hash);
+            res = res * 10 + num;
+            x += numberDistances[num];
+            if (x >= 35) break;
+            hash = getHash(image, x);
         }
+        return res;
     }
 
     private int getHash(BufferedImage image, int x) {

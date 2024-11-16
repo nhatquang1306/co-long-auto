@@ -129,9 +129,9 @@ public abstract class CoLongUtilities {
 
             }
 
-            int points = Math.max(pr.read() - 10, 0);
+            int points = pr.read() - 10;
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("app/data/points.ser"))) {
-                map.put(username, points);
+                map.put(username, Math.max(points, 0));
                 oos.writeObject(map);
             } catch (Exception _) {
 

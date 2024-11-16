@@ -50,7 +50,7 @@ public class CoLong extends CoLongUtilities {
             for (int j = 0; j < questCount; j++) {
                 Deque<Dest> deque = new ArrayDeque<>();
                 boolean closeInventory = false;
-                if (j == 0 && getLocation().equals("tttc")) {
+                if (getLocation().equals("tttc")) {
                     int[] cur = getCoordinates();
                     int x = clan == null ? 18 : 24, y = clan == null ? 72 : 77;
                     if (cur[0] != x || cur[1] != y) {
@@ -64,7 +64,9 @@ public class CoLong extends CoLongUtilities {
                 receiveQuest(deque, visited, closeInventory && clan == null, false);
                 traveling(deque, visited);
             }
-            goToTTTC(visited);
+            if (!getLocation().equals("tttc")) {
+                goToTTTC(visited);
+            }
         } catch (Exception _) {
 
         } finally {
@@ -181,7 +183,8 @@ public class CoLong extends CoLongUtilities {
         } while (!terminateFlag && !waitForDialogueBox(20));
         click(272, 305); // click on van tieu ca nhan
         waitForDialogueBox(20);
-        if (savePoints() < 10) {
+        int points = savePoints();
+        if ((points >= 0 && points < 10) || (points == -10 && isRetry)) {
             questCount = 0;
         }
         click(285, 344); // click on cap 2
@@ -189,10 +192,11 @@ public class CoLong extends CoLongUtilities {
             receiveQuest(deque, visited, false, true);
             return;
         }
-        // capture image to parse destination
         String NPC = nnr.read();
-        click(557, 266);
-        parseDestination(deque, NPC, visited);
+        if (!NPC.isBlank()) {
+            click(557, 266);
+            parseDestination(deque, NPC, visited);
+        }
     }
 
     // parse where to go using text recognition
@@ -207,7 +211,7 @@ public class CoLong extends CoLongUtilities {
     private void traveling(Deque<Dest> deque, Set<String> visited) throws InterruptedException {
         String location = "tttc";
         long idleTime = System.currentTimeMillis();
-        while (!terminateFlag) {
+        while (!terminateFlag && !deque.isEmpty()) {
             if (isInBattle()) { // when user is in battle
                 progressMatch();
                 idleTime = System.currentTimeMillis();
