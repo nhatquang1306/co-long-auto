@@ -327,23 +327,16 @@ public class CoLong extends CoLongUtilities {
             if (isInBattle()) {
                 progressMatch();
                 idleTime = System.currentTimeMillis();
+            } else if (hasDialogueBox() && finishQuest()) {
+                return;
             } else if (isAtLocation(x, y)) {
                 Thread.sleep(1000);
-                if (isInBattle()) continue;
-                while (!terminateFlag) {
-                    if (hasDialogueBox() && finishQuest()) return;
-                    if (!isAtLocation(x, y)) break;
-                    fixFinishQuest();
-                }
-            } else if (clickedText) {
-                if (hasDialogueBox() && finishQuest()) {
-                    return;
-                } else if (System.currentTimeMillis() - idleTime >= 30000) {
-                    clickRandomLocation(240, 380, 230, 170);
-                    clickedText = false;
-                    idleTime = System.currentTimeMillis();
-                }
-            } else if (System.currentTimeMillis() - idleTime >= limit) {
+                if (!isInBattle()) fixFinishQuest();
+            } else if (clickedText && System.currentTimeMillis() - idleTime >= 30000) {
+                clickRandomLocation(240, 380, 230, 170);
+                clickedText = false;
+                idleTime = System.currentTimeMillis();
+            } else if (!clickedText && System.currentTimeMillis() - idleTime >= limit) {
                 click(651, 268);
                 clickedText = true;
                 limit = 7000;
