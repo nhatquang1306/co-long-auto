@@ -77,13 +77,13 @@ public class CoLong extends CoLongUtilities {
     private void goToTTTC(Set<String> visited) throws InterruptedException {
         if (terminateFlag) return;
         if (clan == null) {
-            goWithFlag();
+            goWithFlag(visited);
         } else {
             goWithClan(visited);
         }
     }
 
-    private void goWithFlag() throws InterruptedException {
+    private void goWithFlag(Set<String> visited) throws InterruptedException {
         long start = -20000;
         do {
             Thread.sleep(500);
@@ -91,6 +91,10 @@ public class CoLong extends CoLongUtilities {
                 continue;
             }
             click(569, 586);
+            if (!visited.contains("inventory")) {
+                closeTutorial();
+                visited.add("inventory");
+            }
             rightClick(flag);
             if (waitForDialogueBox(20)) {
                 if (flag[2] == 0) {
@@ -114,6 +118,10 @@ public class CoLong extends CoLongUtilities {
             rightClick(375 + clanSkill * 35, 548);
             Thread.sleep(4000);
             temp = getLocation();
+            if (temp.equals("kdn") && isAtLocation(19, 65)) {
+                goToTD();
+                temp = "td";
+            }
         }
         if (!visited.contains(temp)) {
             closeTutorial();
@@ -165,6 +173,18 @@ public class CoLong extends CoLongUtilities {
         }
     }
 
+    private void goToTD() throws InterruptedException {
+        click(395, 528);
+        while (!isAtLocation(19, 90)) {
+            Thread.sleep(500);
+        }
+        Thread.sleep(500);
+        click(41, 589);
+        while (!getLocation().equals("td")) {
+            Thread.sleep(500);
+        }
+    }
+
     // click on npc to receive quest
     private void receiveQuest(Deque<Dest> deque, Set<String> visited, boolean closeInventory, boolean isRetry) throws InterruptedException {
         if (terminateFlag) return;
@@ -175,7 +195,7 @@ public class CoLong extends CoLongUtilities {
         do {
             if (!isAtLocation(locationX, locationY)) {
                 if (clan == null) {
-                    goWithFlag();
+                    goWithFlag(visited);
                     click(569, 586);
                 } else goWithClan(visited);
             }
@@ -196,6 +216,8 @@ public class CoLong extends CoLongUtilities {
         if (!NPC.isBlank()) {
             click(557, 266);
             parseDestination(deque, NPC, visited);
+        } else {
+            questCount = 0;
         }
     }
 
@@ -331,7 +353,7 @@ public class CoLong extends CoLongUtilities {
                 return;
             } else if (isAtLocation(x, y)) {
                 Thread.sleep(1000);
-                if (!isInBattle()) fixFinishQuest();
+                if (!isInBattle() && !hasDialogueBox()) fixFinishQuest();
             } else if (clickedText && System.currentTimeMillis() - idleTime >= 30000) {
                 clickRandomLocation(240, 380, 230, 170);
                 clickedText = false;

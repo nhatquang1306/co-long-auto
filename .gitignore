@@ -41,7 +41,6 @@ build/
 app/data/clans.ser
 app/data/points.ser
 src/main/java/Main/test.java
-app/AutoVT.jar
-app/AutoVT-1.0.exe
+app/AutoVT*
 captchas/
 screenshot.png
