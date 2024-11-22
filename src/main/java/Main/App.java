@@ -149,9 +149,7 @@ public class App extends AppUtilities {
 
         startButtons[i] = new JButton("Start");
         startButtons[i].setMargin(buttonPadding);
-
         panel.add(startButtons[i]);
-
         startButtons[i].addActionListener(e -> startAccount(i));
     }
 
