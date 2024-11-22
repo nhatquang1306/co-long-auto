@@ -119,8 +119,8 @@ public abstract class CoLongUtilities {
         return cr.read();
     }
 
-    public int savePoints() {
-        synchronized (ButtonMaker.pointLock) {
+    public void savePoints(int points) {
+        synchronized (AppUtilities.pointLock) {
             Map<String, Integer> map = new HashMap<>();
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("app/data/points.ser"))) {
                 map = (HashMap<String, Integer>) ois.readObject();
@@ -128,14 +128,12 @@ public abstract class CoLongUtilities {
 
             }
 
-            int points = pr.read() - 10;
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("app/data/points.ser"))) {
-                map.put(username, Math.max(points, 0));
+                map.put(username, points);
                 oos.writeObject(map);
             } catch (Exception _) {
 
             }
-            return points;
         }
     }
 

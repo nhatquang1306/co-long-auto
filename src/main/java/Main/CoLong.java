@@ -15,7 +15,7 @@ import java.util.*;
 
 
 public class CoLong extends CoLongUtilities {
-    private int questCount;
+    private boolean going;
     private final Fight fight;
     private final int clanSkill;
     private final Clan clan;
@@ -23,12 +23,12 @@ public class CoLong extends CoLongUtilities {
     private final JButton startButton;
 
 
-    public CoLong(int questCount, int skill, int newbie, int pet, int clanSkill, double scale,
+    public CoLong(int skill, int newbie, int pet, int clanSkill, double scale,
                   String clan, JButton startButton, HWND handle, String username) {
         this.scale = scale;
         this.handle = handle;
         this.username = username;
-        this.questCount = questCount;
+        this.going = true;
         this.fight = new Fight(skill, newbie, pet, this);
         this.clanSkill = clanSkill;
         if (clan.endsWith("ĐTK")) {
@@ -47,7 +47,7 @@ public class CoLong extends CoLongUtilities {
         try {
             Set<String> visited = new HashSet<>();
             visited.add("tttc");
-            for (int j = 0; j < questCount; j++) {
+            while (going && !terminateFlag) {
                 Deque<Dest> deque = new ArrayDeque<>();
                 boolean closeInventory = false;
                 if (getLocation().equals("tttc")) {
@@ -64,13 +64,11 @@ public class CoLong extends CoLongUtilities {
                 receiveQuest(deque, visited, closeInventory && clan == null, false);
                 traveling(deque, visited);
             }
-            if (!getLocation().equals("tttc")) {
-                goToTTTC(visited);
-            }
         } catch (Exception _) {
 
         } finally {
-            startButton.setEnabled(true);
+            startButton.setBackground(null);
+            startButton.setText("Start");
         }
     }
 
@@ -203,9 +201,9 @@ public class CoLong extends CoLongUtilities {
         } while (!terminateFlag && !waitForDialogueBox(20));
         click(272, 305); // click on van tieu ca nhan
         waitForDialogueBox(20);
-        int points = savePoints();
-        if ((points >= 0 && points < 10) || (points == -10 && isRetry)) {
-            questCount = 0;
+        int points = pr.read();
+        if ((points >= 10 && points < 20) || (points == 0 && isRetry)) {
+            going = false;
         }
         click(285, 344); // click on cap 2
         if (!waitForDialogueBox(50) && !isRetry) {
@@ -214,10 +212,12 @@ public class CoLong extends CoLongUtilities {
         }
         String NPC = nnr.read();
         if (!NPC.isBlank()) {
+            savePoints(points - 10);
             click(557, 266);
             parseDestination(deque, NPC, visited);
         } else {
-            questCount = 0;
+            savePoints(points);
+            going = false;
         }
     }
 

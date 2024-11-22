@@ -16,19 +16,20 @@ import java.io.ObjectOutputStream;
 import java.util.*;
 import java.util.List;
 
-public abstract class ButtonMaker {
+public abstract class AppUtilities {
     public static double scale;
     public static Map<String, Integer> keyMap;
     public static Set<Integer> functionKeys;
-    public static JTextField[] uidFields, questCountFields;
-    public static JButton[] skillButtons, newbieButtons, petButtons, clanButtons, clanSkillButtons, stopButtons, startButtons;
+    public static JTextField[] uidFields;
+    public static JButton[] skillButtons, newbieButtons, petButtons, clanButtons, clanSkillButtons, startButtons;
     public static Map<Integer, Pair> handleMap;
     public static Map<Integer, Integer> clanMemo;
-    public static final String[] skillHashes = new String[] {"", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10"};
+    public static final String[] skillHashes = new String[] {"Chay", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10"};
     public static final String[] clanHashes = new String[] {"ĐTK", "S-ĐTK", "LPM", "TYL", "QV", "PTV", "NCP", "", "TĐ", "LHO", "ĐM"};
     public static int clanIndex;
     public static final Font buttonFont = new Font("Verdana", Font.BOLD, 14);
     public static final Color buttonColor = new Color(0, 120, 0);
+    public static final Color runningColor = new Color(144, 238, 144);
     public static final Insets buttonPadding = new Insets(2, 2, 2, 2);
     public static final Object lock = new Object();
     public static final Object pointLock = new Object();
@@ -60,7 +61,7 @@ public abstract class ButtonMaker {
                 overlay.add(button);
             }
         }
-        overlay.setBounds(5, 5, 250, 130);
+        overlay.setBounds(3, 3, 250, 130);
         return overlay;
     }
 
@@ -135,11 +136,14 @@ public abstract class ButtonMaker {
 
         JTextArea pointsText = new JTextArea();
         pointsText.setBackground(new Color(50, 50, 50));
-        pointsText.setForeground(new Color(224, 255, 255));
+
+        Color textColor = new Color(224, 255, 255);
+        pointsText.setForeground(textColor);
+        pointsText.setCaretColor(textColor);
         pointsPanel.setViewportView(pointsText);
         pointsPanel.setVisible(false);
         pointsButton.addActionListener(e -> {
-            displayPoints(pointsPanel, frame.getHeight() - 45, pointsText);
+            displayPoints(pointsPanel, frame.getHeight() - 42, pointsText);
         });
         pointsButton.setMargin(buttonPadding);
         return pointsButton;
@@ -151,7 +155,7 @@ public abstract class ButtonMaker {
             return;
         }
         synchronized (pointLock) {
-            pointsPanel.setBounds(5, 5, 300, height);
+            pointsPanel.setBounds(3, 3, 300, height);
             Map<String, Integer> map = new HashMap<>();
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("app/data/points.ser"))) {
                 map = (HashMap<String, Integer>) ois.readObject();
@@ -226,6 +230,22 @@ public abstract class ButtonMaker {
         return res;
     }
 
+    public static String getButtonText(int hash, int id) {
+        int index = (hash >> (id * 4)) & 15;
+        return id < 4 ? skillHashes[index] : clanHashes[index];
+    }
+
+    public static int getHash(int skill, int newbie, int pet, int clanSkill, String clan) {
+        int hash = skill | (newbie << 4) | (pet << 8) | (clanSkill << 12);
+        for (int i = 0; i < clanHashes.length; i++) {
+            if (clan.equals(clanHashes[i])) {
+                hash |= (i << 16);
+                break;
+            }
+        }
+        return hash;
+    }
+
     public static Map<String, Integer> getKeyMap() {
         Map<String, Integer> keyMap = new HashMap<>();
         keyMap.put("F1", 1);
@@ -247,13 +267,11 @@ public abstract class ButtonMaker {
         functionKeys = Set.of(KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4,
                 KeyEvent.VK_F5, KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8, KeyEvent.VK_F9, KeyEvent.VK_F10);
         uidFields = new JTextField[10];
-        questCountFields = new JTextField[10];
         skillButtons = new JButton[10];
         newbieButtons = new JButton[10];
         petButtons = new JButton[10];
         clanSkillButtons = new JButton[10];
         clanButtons = new JButton[10];
-        stopButtons = new JButton[10];
         startButtons = new JButton[10];
         handleMap = getAllWindows();
     }
