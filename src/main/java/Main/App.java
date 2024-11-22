@@ -223,8 +223,7 @@ public class App extends AppUtilities {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     coLong.setTerminateFlag();
-                    startButtons[i].setBackground(null);
-                    startButtons[i].setText("Start");
+                    startButtons[i].removeActionListener(this);
                 }
             };
             startButtons[i].addActionListener(actionListener);

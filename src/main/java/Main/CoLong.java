@@ -173,12 +173,12 @@ public class CoLong extends CoLongUtilities {
 
     private void goToTD() throws InterruptedException {
         click(395, 528);
-        while (!isAtLocation(19, 90)) {
+        while (!terminateFlag && !isAtLocation(19, 90)) {
             Thread.sleep(500);
         }
         Thread.sleep(500);
         click(41, 589);
-        while (!getLocation().equals("td")) {
+        while (!terminateFlag && !getLocation().equals("td")) {
             Thread.sleep(500);
         }
     }
