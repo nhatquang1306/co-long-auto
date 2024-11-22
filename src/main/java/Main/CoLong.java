@@ -64,6 +64,9 @@ public class CoLong extends CoLongUtilities {
                 receiveQuest(deque, visited, closeInventory && clan == null, false);
                 traveling(deque, visited);
             }
+            if (!getLocation().equals("tttc")) {
+                goToTTTC(visited);
+            }
         } catch (Exception _) {
 
         } finally {

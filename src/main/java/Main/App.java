@@ -29,7 +29,7 @@ public class App extends AppUtilities {
 
         JFrame frame = new JFrame("Auto Vận Tiêu");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(440, 255);
+        frame.setSize(440, 248);
         frame.setResizable(false);
 
         JPanel panel = new JPanel();
@@ -80,7 +80,7 @@ public class App extends AppUtilities {
 
             int i = size.getAndIncrement() + 1;
             addAccount(panel, i - 1, clanOverlay);
-            frame.setSize(440, 33 * (i + 2) + 3 * (i + 3));
+            frame.setSize(440, 32 * (i + 2) + 3 * (i + 3));
             panel.setLayout(new GridLayout(i + 2, 7, 3, 3));
 
             for (int j = 0; j < 7; j++) panel.add(bottomRowCells[j]);
@@ -92,7 +92,7 @@ public class App extends AppUtilities {
             }
             int i = size.getAndDecrement() - 1;
             removeAccount(panel, i);
-            frame.setSize(440, 33 * (i + 2) + 3 * (i + 3));
+            frame.setSize(440, 32 * (i + 2) + 3 * (i + 3));
             panel.setLayout(new GridLayout(i + 2, 7, 3, 3));
         });
 
