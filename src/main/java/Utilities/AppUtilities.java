@@ -127,6 +127,15 @@ public abstract class AppUtilities {
         return button;
     }
 
+    public static JButton getResetButton() {
+        JButton button = new JButton("Reset");
+        button.addActionListener(e -> {
+            handleMap = getAllWindows();
+        });
+        button.setMargin(buttonPadding);
+        return button;
+    }
+
     public static JButton getPointsButton(JFrame frame) {
         JButton pointsButton = new JButton("Points");
         JScrollPane pointsPanel = new JScrollPane();

@@ -61,8 +61,9 @@ public class App extends AppUtilities {
         Component[] bottomRowCells = new Component[9];
         bottomRowCells[0] = getPlusMinusButton('+');
         bottomRowCells[1] = getPlusMinusButton('-');
-        bottomRowCells[4] = getHideButton();
-        bottomRowCells[5] = getShowButton();
+        bottomRowCells[3] = getHideButton();
+        bottomRowCells[4] = getShowButton();
+        bottomRowCells[5] = getResetButton();
         bottomRowCells[6] = getPointsButton(frame);
         for (int i = 0; i < 7; i++) {
             if (bottomRowCells[i] == null) {
