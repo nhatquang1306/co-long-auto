@@ -64,7 +64,7 @@ public class CoLong extends CoLongUtilities {
                 receiveQuest(deque, visited, closeInventory && clan == null, false);
                 traveling(deque, visited);
             }
-            if (!getLocation().equals("tttc")) {
+            if (!questFailed() && !getLocation().equals("tttc")) {
                 goToTTTC(visited);
             }
         } catch (Exception _) {
@@ -220,6 +220,7 @@ public class CoLong extends CoLongUtilities {
             parseDestination(deque, NPC, visited);
         } else {
             savePoints(points);
+            if (hasDialogueBox()) click(557, 266);
             going = false;
         }
     }
@@ -353,6 +354,7 @@ public class CoLong extends CoLongUtilities {
                 progressMatch();
                 idleTime = System.currentTimeMillis();
             } else if (hasDialogueBox() && finishQuest()) {
+                if (questFailed()) going = false;
                 return;
             } else if (isAtLocation(x, y)) {
                 Thread.sleep(1000);

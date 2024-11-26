@@ -163,6 +163,14 @@ public abstract class CoLongUtilities {
         return -1;
     }
 
+    public boolean questFailed() {
+        BufferedImage image = lr.captureWindow(564, 257, 30, 1);
+        for (int i = 0; i < 30; i++) {
+            if (image.getRGB(i, 0) != -50116) return false;
+        }
+        return true;
+    }
+
     public Color getPixelColor(int x, int y) {
         x -= 3;
         y -= 26;
