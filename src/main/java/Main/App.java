@@ -89,7 +89,6 @@ public class App extends AppUtilities {
         gbc.gridx = 0;
         panel.add(uidFields[i], gbc);
 
-
         JButton[] buttons = new JButton[] {new JButton("F1"), new JButton("F2"), new JButton("F1"), new JButton("F10")};
         for (int j = 0; j < 4; j++) {
             JButton button = buttons[j];
