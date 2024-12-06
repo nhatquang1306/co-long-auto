@@ -17,7 +17,8 @@ import java.util.*;
 import java.util.List;
 
 public abstract class AppUtilities {
-    public static double scale;
+    public static double scale = -1;
+    public static final GridBagConstraints gbc = new GridBagConstraints();
     public static Map<String, Integer> keyMap;
     public static Set<Integer> functionKeys;
     public static JTextField[] uidFields;
@@ -27,9 +28,11 @@ public abstract class AppUtilities {
     public static final String[] skillHashes = new String[] {"Chay", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10"};
     public static final String[] clanHashes = new String[] {"ĐTK", "S-ĐTK", "LPM", "TYL", "QV", "PTV", "NCP", "", "TĐ", "LHO", "ĐM"};
     public static int clanIndex;
-    public static final Font buttonFont = new Font("Verdana", Font.BOLD, 14);
-    public static final Color buttonColor = new Color(0, 120, 0);
+    public static final Dimension skillDimensions = new Dimension(48, 28);
+    public static final Font skillFont = new Font("Verdana", Font.BOLD, 14);
+    public static final Color skillColor = new Color(0, 120, 0);
     public static final Color runningColor = new Color(144, 238, 144);
+    public static final Dimension buttonDimensions = new Dimension(52, 28);
     public static final Insets buttonPadding = new Insets(2, 2, 2, 2);
     public static final Object lock = new Object();
     public static final Object pointLock = new Object();
@@ -65,34 +68,29 @@ public abstract class AppUtilities {
         return overlay;
     }
 
-    public static JButton getPlusMinusButton(char c) {
-        Image icon = new ImageIcon(c == '+' ? "app/data/plus-icon.png" : "app/data/minus-icon.png").getImage();
-        ImageIcon resizedIcon = new ImageIcon(icon.getScaledInstance(15, 15, java.awt.Image.SCALE_SMOOTH));
+    public static JButton getShowButton() {
+        Image scaledImg = new ImageIcon("app/data/sun.png").getImage().getScaledInstance(22, 22, Image.SCALE_SMOOTH);
+        JButton button = new JButton(new ImageIcon(scaledImg));
 
-        JButton button = new JButton(resizedIcon);
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setMargin(new Insets(1, 0, 0, 0));
-        return button;
-    }
-
-    public static JButton getShowButton() {
-        JButton button = new JButton("Show");
         button.addActionListener(e -> {
             synchronized (lock) {
                 handleMap = getAllWindows();
                 for (Pair pair : handleMap.values()) {
-                    User32.INSTANCE.ShowWindow(pair.handle, 5);
+                    User32.INSTANCE.ShowWindow(pair.handle, 8);
                 }
             }
         });
-        button.setMargin(buttonPadding);
         return button;
     }
 
     public static JButton getHideButton() {
-        JButton button = new JButton("Hide");
+        Image scaledImg = new ImageIcon("app/data/moon.png").getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+        JButton button = new JButton(new ImageIcon(scaledImg));
+
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
         button.addActionListener(e -> {
             synchronized (lock) {
                 handleMap = getAllWindows();
@@ -108,7 +106,6 @@ public abstract class AppUtilities {
                 }
             }
         });
-        button.setMargin(buttonPadding);
         return button;
     }
 
@@ -128,19 +125,24 @@ public abstract class AppUtilities {
     }
 
     public static JButton getResetButton() {
-        JButton button = new JButton("Reset");
+        Image scaledImg = new ImageIcon("app/data/reset.png").getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+        JButton button = new JButton(new ImageIcon(scaledImg));
+
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
         button.addActionListener(e -> {
             handleMap = getAllWindows();
         });
-        button.setMargin(buttonPadding);
         return button;
     }
 
     public static JButton getPointsButton(JFrame frame) {
-        JButton pointsButton = new JButton("Points");
+        Image scaledImg = new ImageIcon("app/data/points.png").getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+        JButton pointsButton = new JButton(new ImageIcon(scaledImg));
+
         JScrollPane pointsPanel = new JScrollPane();
         frame.getLayeredPane().add(pointsPanel, JLayeredPane.MODAL_LAYER);
-        pointsPanel.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
+        pointsPanel.setBorder(new EmptyBorder(2, 2, 2, 2));
         pointsPanel.setBackground(new Color(50, 50, 50));
 
         JTextArea pointsText = new JTextArea();
@@ -151,20 +153,22 @@ public abstract class AppUtilities {
         pointsText.setCaretColor(textColor);
         pointsPanel.setViewportView(pointsText);
         pointsPanel.setVisible(false);
+
+        pointsButton.setBorderPainted(false);
+        pointsButton.setContentAreaFilled(false);
         pointsButton.addActionListener(e -> {
-            displayPoints(pointsPanel, frame.getHeight() - 42, pointsText);
+            displayPoints(pointsPanel, pointsText);
         });
-        pointsButton.setMargin(buttonPadding);
         return pointsButton;
     }
 
-    public static void displayPoints(JScrollPane pointsPanel, int height, JTextArea pointsText) {
+    public static void displayPoints(JScrollPane pointsPanel, JTextArea pointsText) {
         if (pointsPanel.isVisible()) {
             readPointsPanel(pointsPanel, pointsText);
             return;
         }
         synchronized (pointLock) {
-            pointsPanel.setBounds(3, 3, 300, height);
+            pointsPanel.setBounds(3, 3, 270, 336);
             Map<String, Integer> map = new HashMap<>();
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("app/data/points.ser"))) {
                 map = (HashMap<String, Integer>) ois.readObject();
@@ -283,6 +287,7 @@ public abstract class AppUtilities {
         clanButtons = new JButton[10];
         startButtons = new JButton[10];
         handleMap = getAllWindows();
+        gbc.insets = new Insets(3, 3, 0, 0);
     }
 
     public static class Pair {

@@ -2,80 +2,81 @@ package Utilities;
 
 import Objects.Dest;
 
+import java.util.Deque;
 import java.util.Queue;
 
 public class SwitchStatements {
-    public static boolean parseDestination(String NPC, Queue<Dest> queue) {
+    public static boolean parseDestination(String NPC, Deque<Dest> deque) {
         boolean res = false;
         switch (NPC) {
             case "ctt":
                 res = true;
-                queue.offer(new Dest(491, 227, 173, 164, "kt"));
-                queue.offer(new Dest(2));
-                queue.offer(new Dest(3));
-                queue.offer(new Dest(57, 48, "htt"));
+                deque.offer(new Dest(491, 227, 173, 164, "kt"));
+                deque.offer(new Dest(2));
+                deque.offer(new Dest(3));
+                deque.offer(new Dest(57, 48, "htt"));
                 break;
             case "ccs":
-                queue.offer(new Dest(37, 145, "lm"));
+                deque.offer(new Dest(37, 145, "lm"));
                 break;
             case "ltd":
                 res = true;
-                queue.offer(new Dest(491, 227, 173, 164, "kt"));
-                queue.offer(new Dest(2));
-                queue.offer(new Dest(3));
-                queue.offer(new Dest(623, 264, 10, 307, "lth"));
-                queue.offer(new Dest(30, 199, "ncp"));
+                deque.offer(new Dest(491, 227, 173, 164, "kt"));
+                deque.offer(new Dest(2));
+                deque.offer(new Dest(3));
+                deque.offer(new Dest(623, 264, 10, 307, "lth"));
+                deque.offer(new Dest(30, 199, "ncp"));
                 break;
             case "tl":
                 res = true;
-                queue.offer(new Dest(491, 227, 173, 164, "kt"));
-                queue.offer(new Dest(2));
-                queue.offer(new Dest(74, 86, "vdd"));
+                deque.offer(new Dest(491, 227, 173, 164, "kt"));
+                deque.offer(new Dest(2));
+                deque.offer(new Dest(74, 86, "vdd"));
                 break;
             case "tdh":
                 res = true;
-                queue.offer(new Dest(101, 496, 161, 49, "dps"));
-                queue.offer(new Dest(51, 161, "hht"));
+                deque.offer(new Dest(101, 496, 161, 49, "dps"));
+                deque.offer(new Dest(51, 161, "hht"));
                 break;
             case "tt":
                 res = true;
-                queue.offer(new Dest(688, 199, 18, 254, "ktdg"));
-                queue.offer(new Dest(38, 79, "dvd"));
+                deque.offer(new Dest(688, 199, 18, 254, "ktdg"));
+                deque.offer(new Dest(38, 79, "dvd"));
                 break;
             case "tdpq":
                 res = true;
-                queue.offer(new Dest(688, 199, 18, 254, "ktdg"));
-                queue.offer(new Dest(32, 57, "tkt"));
+                deque.offer(new Dest(688, 199, 18, 254, "ktdg"));
+                deque.offer(new Dest(32, 57, "tkt"));
                 break;
             case "mkq":
                 res = true;
-                queue.offer(new Dest(101, 496, 161, 49, "dps"));
-                queue.offer(new Dest(18, 60, "qdvmd"));
+                deque.offer(new Dest(101, 496, 161, 49, "dps"));
+                deque.offer(new Dest(18, 60, "qdvmd"));
                 break;
             case "mqltb":
-                queue.offer(new Dest(22, 110, "kdn"));
+                deque.offer(new Dest(22, 110, "kdn"));
                 break;
             case "dtt":
                 res = true;
-                queue.offer(new Dest(688, 199, 18, 254, "ktdg"));
-                queue.offer(new Dest(14, 71, "tld"));
+                deque.offer(new Dest(688, 199, 18, 254, "ktdg"));
+                deque.offer(new Dest(14, 71, "tld"));
                 break;
             case "nll":
                 res = true;
-                queue.offer(new Dest(688, 199, 18, 254, "ktdg"));
-                queue.offer(new Dest(29, 70, "qv"));
+                deque.offer(new Dest(688, 199, 18, 254, "ktdg"));
+                deque.offer(new Dest(29, 70, "qv"));
                 break;
             case "slh":
-                queue.offer(new Dest(26, 57, "lhc"));
+                deque.offer(new Dest(26, 57, "lhc"));
                 break;
             case "ht":
-                queue.offer(new Dest(29, 84, "bkd"));
+                deque.offer(new Dest(29, 84, "bkd"));
                 break;
             case "hsy":
-                queue.offer(new Dest(10, 73, "tbks"));
+                deque.offer(new Dest(10, 73, "tbks"));
                 break;
             case "kph":
-                queue.offer(new Dest(20, 65, "klh"));
+                deque.offer(new Dest(20, 65, "klh"));
                 break;
         }
         return res;
@@ -120,7 +121,7 @@ public class SwitchStatements {
     }
 
     public static int[] handleIdling(String location, int x) {
-        if (location.charAt(0) <= 'm') {
+        if (!location.isBlank() && location.charAt(0) <= 'm') {
             return handleIdlingSmall(location, x);
         } else {
             return handleIdlingLarge(location, x);

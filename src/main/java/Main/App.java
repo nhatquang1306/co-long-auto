@@ -1,6 +1,8 @@
 package Main;
 
 import Utilities.AppUtilities;
+import com.sun.jna.platform.win32.User32;
+import com.sun.jna.platform.win32.WinDef;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -29,81 +31,64 @@ public class App extends AppUtilities {
 
         JFrame frame = new JFrame("Auto Vận Tiêu");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(440, 248);
         frame.setResizable(false);
 
         JPanel panel = new JPanel();
-        panel.setBorder(new EmptyBorder(3, 3, 3, 3));
-        panel.setLayout(new GridLayout(7, 7, 3, 3));
+        panel.setLayout(new GridBagLayout());
+        panel.setBorder(new EmptyBorder(0, 0, 3, 0));
         frame.add(panel);
 
         initialize();
 
         String[] titles = new String[] {"UID", "Kỹ năng", "Tân thủ", "Trợ thủ", "Về phái", "Phái"};
 
+        gbc.gridy = 0;
+        Dimension labelDimensions = new Dimension(48, 26);
         for (int i = 0; i < 6; i++) {
             JLabel label = new JLabel(titles[i]);
+            label.setPreferredSize(labelDimensions);
             label.setHorizontalAlignment(SwingConstants.CENTER);
-            panel.add(label);
+            gbc.gridx = i;
+            panel.add(label, gbc);
         }
+        gbc.gridx = 6;
         panel.add(new JPanel());
 
         JPanel clanOverlay = getClanOverlay();
         frame.getLayeredPane().add(clanOverlay, JLayeredPane.PALETTE_LAYER);
         clanOverlay.setVisible(false);
 
-        // add components for all 5 accounts
-        AtomicInteger size = new AtomicInteger(5);
-        for (int i = 0; i < 5; i++) {
+        // add components for all 10 accounts
+
+        for (int i = 0; i < 10; i++) {
+            gbc.gridy = i + 1;
             addAccount(panel, i, clanOverlay);
         }
 
-        Component[] bottomRowCells = new Component[9];
-        bottomRowCells[0] = getPlusMinusButton('+');
-        bottomRowCells[1] = getPlusMinusButton('-');
-        bottomRowCells[3] = getHideButton();
-        bottomRowCells[4] = getShowButton();
-        bottomRowCells[5] = getResetButton();
-        bottomRowCells[6] = getPointsButton(frame);
-        for (int i = 0; i < 7; i++) {
-            if (bottomRowCells[i] == null) {
-                bottomRowCells[i] = new JPanel();
-            }
-            panel.add(bottomRowCells[i]);
-        }
+        gbc.gridheight = 2;
+        gbc.gridx = 7;
 
-        ((JButton)bottomRowCells[0]).addActionListener(e -> {
-            if (size.get() >= 10) {
-                return;
-            }
-            for (int i = 6; i >= 0; i--) panel.remove(bottomRowCells[i]);
+        gbc.gridy = 1;
+        panel.add(getHideButton(), gbc);
+        gbc.gridy = 3;
+        panel.add(getShowButton(), gbc);
+        gbc.gridy = 5;
+        panel.add(getResetButton(), gbc);
+        gbc.gridy = 7;
+        panel.add(getPointsButton(frame), gbc);
 
-            int i = size.getAndIncrement() + 1;
-            addAccount(panel, i - 1, clanOverlay);
-            frame.setSize(440, 32 * (i + 2) + 3 * (i + 3));
-            panel.setLayout(new GridLayout(i + 2, 7, 3, 3));
-
-            for (int j = 0; j < 7; j++) panel.add(bottomRowCells[j]);
-        });
-
-        ((JButton)bottomRowCells[1]).addActionListener(e -> {
-            if (size.get() <= 5) {
-                return;
-            }
-            int i = size.getAndDecrement() - 1;
-            removeAccount(panel, i);
-            frame.setSize(440, 32 * (i + 2) + 3 * (i + 3));
-            panel.setLayout(new GridLayout(i + 2, 7, 3, 3));
-        });
-
+        frame.pack();
         frame.setVisible(true);
     }
 
     private static void addAccount(JPanel panel, int i, JPanel overlay) {
         uidFields[i] = new JTextField();
+        uidFields[i].setPreferredSize(buttonDimensions);
         uidFields[i].getDocument().addDocumentListener(getAutofill(i));
 
-        panel.add(uidFields[i]);
+        gbc.gridx = 0;
+        panel.add(uidFields[i], gbc);
+
 
         JButton[] buttons = new JButton[] {new JButton("F1"), new JButton("F2"), new JButton("F1"), new JButton("F10")};
         for (int j = 0; j < 4; j++) {
@@ -122,10 +107,11 @@ public class App extends AppUtilities {
                 };
                 button.addKeyListener(keyAdapter);
             });
-            button.setFont(buttonFont);
-            button.setForeground(buttonColor);
+            button.setFont(skillFont);
+            button.setForeground(skillColor);
             button.setBorderPainted(false);
             button.setContentAreaFilled(false);
+            button.setPreferredSize(skillDimensions);
             button.setMargin(buttonPadding);
         }
 
@@ -135,21 +121,29 @@ public class App extends AppUtilities {
         clanSkillButtons[i] = buttons[3];
 
         clanButtons[i] = new JButton("S-ĐTK");
+        clanButtons[i].setPreferredSize(buttonDimensions);
         clanButtons[i].setMargin(buttonPadding);
         clanButtons[i].addActionListener(e -> {
             clanIndex = i;
             overlay.setVisible(true);
         });
 
-        panel.add(skillButtons[i]);
-        panel.add(newbieButtons[i]);
-        panel.add(petButtons[i]);
-        panel.add(clanSkillButtons[i]);
-        panel.add(clanButtons[i]);
+        gbc.gridx = 1;
+        panel.add(skillButtons[i], gbc);
+        gbc.gridx = 2;
+        panel.add(newbieButtons[i], gbc);
+        gbc.gridx = 3;
+        panel.add(petButtons[i], gbc);
+        gbc.gridx = 4;
+        panel.add(clanSkillButtons[i], gbc);
+        gbc.gridx = 5;
+        panel.add(clanButtons[i], gbc);
 
         startButtons[i] = new JButton("Start");
+        startButtons[i].setPreferredSize(buttonDimensions);
         startButtons[i].setMargin(buttonPadding);
-        panel.add(startButtons[i]);
+        gbc.gridx = 6;
+        panel.add(startButtons[i], gbc);
         startButtons[i].addActionListener(e -> startAccount(i));
     }
 
@@ -236,22 +230,16 @@ public class App extends AppUtilities {
 
                 }
             }
+
+            if (!User32.INSTANCE.IsWindowVisible(pair.handle)) {
+                User32.INSTANCE.ShowWindow(pair.handle, 8);
+                Thread.sleep(500);
+            }
             new Thread(coLong::run).start();
         } catch (NumberFormatException _) {
             uidFields[i].setText("");
         } catch (Exception _) {
             startButtons[i].setEnabled(true);
         }
-    }
-
-    private static void removeAccount(JPanel panel, int i) {
-        panel.remove(startButtons[i]);
-        panel.remove(clanButtons[i]);
-        panel.remove(clanSkillButtons[i]);
-        panel.remove(petButtons[i]);
-        panel.remove(newbieButtons[i]);
-        panel.remove(skillButtons[i]);
-        uidFields[i].setText("");
-        panel.remove(uidFields[i]);
     }
 }

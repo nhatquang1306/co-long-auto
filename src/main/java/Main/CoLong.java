@@ -115,14 +115,19 @@ public class CoLong extends CoLongUtilities {
         int[] info = clan.getInfo();
         String temp = getLocation();
         // transport back to clan
+        long start = -4000;
         while (!terminateFlag && !temp.equals(location)) {
-            rightClick(375 + clanSkill * 35, 548);
-            Thread.sleep(4000);
-            temp = getLocation();
-            if (temp.equals("kdn") && isAtLocation(19, 65)) {
-                goToTD();
-                temp = "td";
+            if (System.currentTimeMillis() - start >= 4000) {
+                rightClick(375 + clanSkill * 35, 548);
+                start = System.currentTimeMillis();
+            } else {
+                temp = getLocation();
+                if (temp.equals("kdn") && isAtLocation(19, 65)) {
+                    goToTD();
+                    temp = "td";
+                }
             }
+            Thread.sleep(400);
         }
         if (!visited.contains(temp)) {
             closeTutorial();
@@ -130,7 +135,7 @@ public class CoLong extends CoLongUtilities {
         }
 
         // go to clan npc
-        long start = -20000;
+        start = -20000;
         int limit = 1;
         do {
             if (!isAtLocation(info[2], info[3])) {
@@ -251,7 +256,11 @@ public class CoLong extends CoLongUtilities {
                     if (isInBattle()) continue;
                     Dest temp = deque.poll();
                     if (!startMovement(deque, visited)) {
-                        deque.push(temp);
+                        if (deque.peek().methodId == 3) {
+                            deque.push(new Dest(364, 276, 58, 132, "tvd"));
+                        } else {
+                            deque.push(temp);
+                        }
                     }
                 } else if (time - idleTime >= 50000) {
                     useMap(visited, deque.peek().mapX, deque.peek().mapY);
@@ -289,7 +298,7 @@ public class CoLong extends CoLongUtilities {
             if (arrived) dest.methodId = -1;
             return arrived;
         } else {
-            goToHTT();
+            return goToHTT();
         }
         return true;
     }
@@ -301,7 +310,6 @@ public class CoLong extends CoLongUtilities {
         if (location.equals("tyl-tkt")) {
             click(383, 350);
             Thread.sleep(1000);
-            click(651, 268);
         } else {
             click(766, 183);
             if (!visited.contains("map")) {
@@ -309,8 +317,8 @@ public class CoLong extends CoLongUtilities {
                 visited.add("map");
             }
             click(SwitchStatements.handleIdling(location, x));
-            click(749, 268);
         }
+        click(749, 268);
     }
 
     private void progressMatch() throws InterruptedException {
@@ -395,16 +403,18 @@ public class CoLong extends CoLongUtilities {
     // method for getting out of truong thanh tieu cuc
     private void getOut(Set<String> visited) throws InterruptedException {
         if (terminateFlag) return;
+        long start = System.currentTimeMillis();
         if (clan == null) {
             click(730, 443);
-            Thread.sleep(2000);
+            while (!isAtLocation(28, 87) && System.currentTimeMillis() - start <= 3000) {
+                Thread.sleep(400);
+            }
         }
-        long start = System.currentTimeMillis();
+        start = System.currentTimeMillis();
         int i = 0;
         click(clan != null ? 752 : 651, clan != null ? 512 : 432);
         while (!terminateFlag && !getLocation().equals("kt")) {
-            if (i > 0 || System.currentTimeMillis() - start >= 30000) {
-                if (i == 0 && hasDialogueBox()) click(557, 266);
+            if (System.currentTimeMillis() - start >= 30000) {
                 if (i++ % 3 == 2) {
                     click(420, 515);
                 } else {
@@ -439,11 +449,15 @@ public class CoLong extends CoLongUtilities {
     }
 
     // go to HTT through TVD
-    private void goToHTT() throws InterruptedException {
-        if (terminateFlag) return;
+    private boolean goToHTT() throws InterruptedException {
+        if (terminateFlag) return true;
         do {
+            if (!isAtLocation(58, 132)) {
+                return false;
+            }
             clickOnNpc(555, 279);
         } while (!terminateFlag && !waitForDialogueBox(20));
         click(259, 286);
+        return true;
     }
 }
