@@ -28,11 +28,11 @@ public abstract class AppUtilities {
     public static final String[] skillHashes = new String[] {"Chay", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10"};
     public static final String[] clanHashes = new String[] {"ĐTK", "S-ĐTK", "LPM", "TYL", "QV", "PTV", "NCP", "", "TĐ", "LHO", "ĐM"};
     public static int clanIndex;
-    public static final Dimension skillDimensions = new Dimension(48, 28);
+    public static final Dimension skillDimensions = new Dimension(50, 28);
     public static final Font skillFont = new Font("Verdana", Font.BOLD, 14);
     public static final Color skillColor = new Color(0, 120, 0);
     public static final Color runningColor = new Color(144, 238, 144);
-    public static final Dimension buttonDimensions = new Dimension(52, 28);
+    public static final Dimension buttonDimensions = new Dimension(53, 28);
     public static final Insets buttonPadding = new Insets(2, 2, 2, 2);
     public static final Object lock = new Object();
     public static final Object pointLock = new Object();
@@ -142,7 +142,7 @@ public abstract class AppUtilities {
 
         JScrollPane pointsPanel = new JScrollPane();
         frame.getLayeredPane().add(pointsPanel, JLayeredPane.MODAL_LAYER);
-        pointsPanel.setBorder(new EmptyBorder(2, 2, 2, 2));
+        pointsPanel.setBorder(new EmptyBorder(2, 2, 2, 0));
         pointsPanel.setBackground(new Color(50, 50, 50));
 
         JTextArea pointsText = new JTextArea();

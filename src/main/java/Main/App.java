@@ -43,7 +43,7 @@ public class App extends AppUtilities {
         String[] titles = new String[] {"UID", "Kỹ năng", "Tân thủ", "Trợ thủ", "Về phái", "Phái"};
 
         gbc.gridy = 0;
-        Dimension labelDimensions = new Dimension(48, 26);
+        Dimension labelDimensions = new Dimension(50, 26);
         for (int i = 0; i < 6; i++) {
             JLabel label = new JLabel(titles[i]);
             label.setPreferredSize(labelDimensions);
