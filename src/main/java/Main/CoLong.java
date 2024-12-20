@@ -16,6 +16,7 @@ import java.util.*;
 
 public class CoLong extends CoLongUtilities {
     private boolean going;
+    private int index;
     private final Fight fight;
     private final int clanSkill;
     private final Clan clan;
@@ -39,6 +40,7 @@ public class CoLong extends CoLongUtilities {
             this.flag = new int[3];
         }
         this.startButton = startButton;
+        this.index = 0;
 
         initialize();
     }
@@ -52,7 +54,7 @@ public class CoLong extends CoLongUtilities {
                 boolean closeInventory = false;
                 if (getLocation().equals("tttc")) {
                     int[] cur = getCoordinates();
-                    int x = clan == null ? 18 : 24, y = clan == null ? 72 : 77;
+                    int x = clan == null ? 18 : positionCoords[index][0], y = clan == null ? 72 : positionCoords[index][1];
                     if (cur[0] != x || cur[1] != y) {
                         goToTTTC(visited);
                         closeInventory = true;
@@ -64,9 +66,14 @@ public class CoLong extends CoLongUtilities {
                 receiveQuest(deque, visited, closeInventory && clan == null, false);
                 traveling(deque, visited);
             }
-            if (!questFailed() && !getLocation().equals("tttc")) {
-                goToTTTC(visited);
+            if (questFailed()) {
+                return;
+
             }
+            int x = clan == null ? 18 : positionCoords[index][0], y = clan == null ? 72 : positionCoords[index][1];
+            if (!isAtLocation(x, y, "tttc")) goToTTTC(visited);
+            getOut(visited);
+            goFromKT(visited, "ttp", 177, 374);
         } catch (Exception _) {
 
         } finally {
@@ -80,7 +87,8 @@ public class CoLong extends CoLongUtilities {
         if (clan == null) {
             goWithFlag(visited);
         } else {
-            goWithClan(visited);
+            goToClan(visited);
+            goFromKT(visited, "tttc", 102, 421);
         }
     }
 
@@ -110,7 +118,7 @@ public class CoLong extends CoLongUtilities {
         } while (!terminateFlag && !isAtLocation(18, 72, "tttc"));
     }
 
-    private void goWithClan(Set<String> visited) throws InterruptedException {
+    private void goToClan(Set<String> visited) throws InterruptedException {
         String location = clan.getLocation();
         int[] info = clan.getInfo();
         String temp = getLocation();
@@ -135,6 +143,7 @@ public class CoLong extends CoLongUtilities {
         }
 
         // go to clan npc
+        if (terminateFlag) return;
         start = -20000;
         int limit = 1;
         do {
@@ -161,20 +170,28 @@ public class CoLong extends CoLongUtilities {
             closeTutorial();
             visited.add("kt");
         }
+    }
 
-        // go to tttc
-        start = -50000;
+    private void goFromKT(Set<String> visited, String target, int a, int b) throws InterruptedException {
+        if (terminateFlag) return;
+        long start = -50000;
         do {
             if (System.currentTimeMillis() - start < 50000) {
                 continue;
             }
-            useMap(visited, 102, 421);
+            useMap(visited, a, b);
             start = System.currentTimeMillis();
             Thread.sleep(500);
-        } while (!terminateFlag && !getLocation().equals("tttc"));
+        } while (!terminateFlag && !getLocation().equals(target));
         Thread.sleep(500);
-        click(171, 240);
-        while (!terminateFlag && !isAtLocation(24, 77)) {
+        int x = 38, y = 99;
+        if (a == 102) {
+            index = (int)(Math.random() * 4);
+            click(targetCoords[index]);
+            x = positionCoords[index][0];
+            y = positionCoords[index][1];
+        }
+        while (!terminateFlag && !isAtLocation(x, y)) {
             Thread.sleep(1000);
         }
     }
@@ -196,14 +213,17 @@ public class CoLong extends CoLongUtilities {
         if (terminateFlag) return;
         if (closeInventory) click(569, 586);
         // where to click depends on how the user got there
-        int npcX = clan == null ? 306 : 97, npcY = clan == null ? 145 : 126;
-        int locationX = clan == null ? 18 : 24, locationY = clan == null ? 72 : 77;
+        int npcX = clan == null ? 306 : npcCoords[index][0], npcY = clan == null ? 145 : npcCoords[index][1];
+        int locationX = clan == null ? 18 : positionCoords[index][0], locationY = clan == null ? 72 : positionCoords[index][1];
         do {
             if (!isAtLocation(locationX, locationY)) {
                 if (clan == null) {
                     goWithFlag(visited);
                     click(569, 586);
-                } else goWithClan(visited);
+                } else {
+                    goToClan(visited);
+                    goFromKT(visited, "tttc", 102, 421);
+                }
             }
             clickOnNpc(npcX, npcY);
         } while (!terminateFlag && !waitForDialogueBox(20));
@@ -412,7 +432,7 @@ public class CoLong extends CoLongUtilities {
         }
         start = System.currentTimeMillis();
         int i = 0;
-        click(clan != null ? 752 : 651, clan != null ? 512 : 432);
+        click(clan != null ? portalCoords[index][0] : 651, clan != null ? portalCoords[index][1] : 432);
         while (!terminateFlag && !getLocation().equals("kt")) {
             if (System.currentTimeMillis() - start >= 30000) {
                 if (i++ % 3 == 2) {

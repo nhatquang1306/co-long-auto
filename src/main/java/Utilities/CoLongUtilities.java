@@ -33,6 +33,10 @@ public abstract class CoLongUtilities {
     public static final Color moveBar = new Color(81, 71, 34);
     public static final Color petMoveBar = new Color(49, 41, 15);
     public static BufferedImage vtPicture = null;
+    public static final int[][] npcCoords = new int[][] {{97, 126}, {98, 160}, {170, 89}, {99, 140}};
+    public static final int[][] targetCoords = new int[][] {{171, 240}, {187, 175}, {112, 273}, {192, 207}};
+    public static final int[][] positionCoords = new int[][] {{24, 77}, {24, 69}, {22, 81}, {24, 73}};
+    public static final int[][] portalCoords = new int[][] {{752, 512}, {799, 569}, {800, 474}, {749, 522}};
 
     public void initialize() {
         if (vtPicture == null) {
